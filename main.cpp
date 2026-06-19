@@ -15,17 +15,23 @@ int main() {
 		glfwTerminate();
 		exit(EXIT_FAILURE);
 	}
+	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
-	glewExperimental = GL_TRUE;
+	auto glewExperimental = GL_TRUE;
 	GLenum err = glewInit();
 	if(err != GLEW_OK){
-		std::cerr << "Failed to create GLEW!";
+		std::cerr << "Failed to initialize GLEW!";
 		glfwDestroyWindow(window);
 		glfwTerminate();
 		exit(EXIT_FAILURE);
 	}
 	while(!glfwWindowShouldClose(window)){
-		
+		glClearColor(0.0, 0.0, 0.0, 1.0);
+		glClear(GL_COLOR_BUFFER_BIT);
+		glfwSwapBuffers(window);
+		glfwPollEvents();
 	}
+	glfwDestroyWindow(window);
+	glfwTerminate();
 	return 0;
 }
