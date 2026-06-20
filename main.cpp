@@ -56,18 +56,20 @@ int main() {
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glfwGetFramebufferSize(window, &fbwight,&fbheight);
 	glViewport(0, 0,fbwight, fbheight);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(-10.0, 10.0,-10.0, 10.0,0.0,1.0);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
 	while(!glfwWindowShouldClose(window)){
+		constexpr float aspect_ratio {static_cast<float>(WIDTH) / static_cast<float>(HEIGHT)};
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(aspect_ratio*-10.0, aspect_ratio*10.0,-10.0, 10.0,0.0,1.0);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
 		// INFO: drawing the cente of ther black hole
 		glColor3f(0.0f, 0.0f, 0.0f);
 		draw_circle(0.0f, 0.0f, 1.0f);
 		// INFO: drawing the event horizon on top
+		glLineWidth(2.0f);
 		glColor3f(0.0f, 0.8f, 0.8f);
 		draw_outline(0.0f, 0.0f,1.5f);
 
