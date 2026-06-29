@@ -1,56 +1,32 @@
-#include <GL/glew.h>
+#include "glad/glad.h"
 #include <GLFW/glfw3.h>
 #include <cmath>
 #include <cstdlib>
+#include <glm/ext/vector_float2.hpp>
 #include <glm/glm.hpp>
 #include <iostream>
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626
 #endif
-
 const int WIDTH{800};
 const int HEIGHT{600};
-const int CIRCLE_SEGMENTS{50};
-void draw_circle(float x, float y, const float radius) {
-  glBegin(GL_TRIANGLE_FAN);
-  glVertex2f(x, y);
-  constexpr float rotation_angle{2.0f * M_PI /
-                                 static_cast<float>(CIRCLE_SEGMENTS)};
-  for (int i{0}; i <= CIRCLE_SEGMENTS; i++) {
-    const float x_c{x +
-                    radius * std::cos(static_cast<float>(i) * rotation_angle)};
-    const float y_c{y +
-                    radius * std::sin(static_cast<float>(i) * rotation_angle)};
-    glVertex2f(x_c, y_c);
-  }
-  glEnd();
-}
-void draw_outline(float x, float y, const float radius) {
-  glBegin(GL_LINE_LOOP);
-  for (int i{0}; i < CIRCLE_SEGMENTS; ++i) {
-    const float rotation_angle{static_cast<float>(i) * 2.0f *
-                               static_cast<float>(M_PI) /
-                               static_cast<float>(CIRCLE_SEGMENTS)};
-    const float x_c{x + radius * std::cos(rotation_angle)};
-    const float y_c{y + radius * std::sin(rotation_angle)};
-    glVertex2f(x_c, y_c);
-  }
-  glEnd();
-}
-constexpr const char *OPENGL_SHADER_SRC = R"(#version 450 core
-layout(location = 0) in vec2 pos_a;
+const int NUM_PARTICLES{3};
+const float rect_height{0.2f};
+const float rect_width{0.4f};
+constexpr const char *VERTEX_SHADER_SRC = R"(#version 450 core
+layout(location = 0) in vec3 pos_a;
 
 void main(){
-	gl_Position = vec4(pos_a, 0.0, 1.0);
+	gl_Position = vec4(pos_a,  1.0);
 }
 
 )";
 
-constexpr char const *PENGL_SHADER_SRC = R"(#version 450 core
+constexpr char const *FRAGMENT_SHADER_SRC = R"(#version 450 core
 layout(location = 0) out vec4 frag_color;
 
 void main(){
-	frag_color = vec4(1.0);
+	frag_color = vec4(0.4, 0.5, 0.2, 1.0);
 }
 
 )";
@@ -71,39 +47,46 @@ int main() {
   }
   glfwMakeContextCurrent(window);
   glfwSwapInterval(1);
-  auto glewExperimental = GL_TRUE;
-  GLenum err = glewInit();
-  if (err != GLEW_OK) {
-    std::cerr << "Failed to initialize GLEW!";
-    glfwDestroyWindow(window);
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+    std::cerr << "Failed to initialize GLAD!" << std::endl;
     glfwTerminate();
     exit(EXIT_FAILURE);
   }
-  std::cout << "OpenGL version: " << glGetString(GL_VERSION) << std::endl;
-  int fbwight, fbheight;
+  glViewport(0, 0, WIDTH, HEIGHT);
+  glfwSetFramebufferSizeCallback(
+      window, [](GLFWwindow *, int w, int h) { glViewport(0, 0, w, h); });
   glClearColor(0.0f, 0.8f, 0.4f, 1.0f);
-  constexpr float data[] = {
-      0.f, .5f, -.5f, -.5f, .5f, -.5f,
-  };
+  float vertices[] = {-.5f, -.5f, .0f, -.5f, .5f,  .0f,
+                      .5f,  .5f,  .0f, .5f,  -.5f, .0f};
+  unsigned int indices[] = {0, 1, 3, 1, 2, 3};
+  /*
+  std::random_device dev;
+  std::mt19937 rng(dev());
+  std::uniform_real_distribution<std::mt19937::result_type>
+  dist_angle(0.f, 1.f);
+  */
+  unsigned int VBO, VAO, EBO;
+  glGenVertexArrays(1, &VAO);
+  glGenBuffers(1, &VBO);
+  glGenBuffers(1, &EBO);
 
-  GLuint vbo;
-  glCreateBuffers(1, &vbo);
-  glNamedBufferStorage(vbo, sizeof(data), data, 0);
-  GLuint vao;
-  glCreateVertexArrays(1, &vao);
-  glVertexArrayVertexBuffer(vao, 0, vbo, 0, 2 * sizeof(float));
-  glVertexArrayBindingDivisor(vao, 0, 0);
-  glVertexArrayAttribBinding(vao, 0, 0);
-  glVertexArrayAttribFormat(vao, 0, 2, GL_FLOAT, GL_FALSE, 0);
-  glEnableVertexArrayAttrib(vao, 0);
-  GLuint vertex_shader{compile_shader(GL_VERTEX_SHADER, OPENGL_SHADER_SRC)};
-  GLuint fragment_shader{compile_shader(GL_FRAGMENT_SHADER, PENGL_SHADER_SRC)};
+  glBindVertexArray(VAO);
+
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
+               GL_STATIC_DRAW);
+  glEnableVertexArrayAttrib(VAO, 0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+  GLuint vertex_shader{compile_shader(GL_VERTEX_SHADER, VERTEX_SHADER_SRC)};
+  GLuint fragment_shader{
+      compile_shader(GL_FRAGMENT_SHADER, FRAGMENT_SHADER_SRC)};
   GLuint program = glCreateProgram();
   glAttachShader(program, vertex_shader);
   glAttachShader(program, fragment_shader);
   glLinkProgram(program);
   glUseProgram(program);
-  glBindVertexArray(vao);
 
   GLint linked;
   glGetProgramiv(program, GL_LINK_STATUS, &linked);
@@ -120,13 +103,14 @@ int main() {
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
     glClear(GL_COLOR_BUFFER_BIT);
-    // INFO: drawing the center of ther black hole
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     glfwSwapBuffers(window);
   }
   glDeleteProgram(program);
-  glDeleteVertexArrays(1, &vao);
-  glDeleteBuffers(1, &vbo);
+  glDeleteVertexArrays(1, &VAO);
+  glDeleteBuffers(1, &VBO);
+  glDeleteBuffers(1, &EBO);
   glfwDestroyWindow(window);
   glfwTerminate();
   return 0;
