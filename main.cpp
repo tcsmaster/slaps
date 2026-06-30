@@ -42,8 +42,8 @@ int main() {
   glfwSetFramebufferSizeCallback(
       window, [](GLFWwindow *, int w, int h) { glViewport(0, 0, w, h); });
   glClearColor(0.0f, 0.8f, 0.4f, 1.0f);
-  float vertices[] = {-.5f, -.5f, .0f, -.5f, .5f,  .0f,
-                      .5f,  .5f,  .0f, .5f,  -.5f, .0f};
+  float vertices[] = {-.8f, -.1f, .0f, -.8f, .1f,  .0f,
+                      .8f,  .1f,  .0f, .8f,  -.1f, .0f};
   unsigned int indices[] = {0, 1, 3, 1, 2, 3};
   /*
   std::random_device dev;
@@ -70,11 +70,10 @@ int main() {
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
     glClear(GL_COLOR_BUFFER_BIT);
-    // glm::mat4 trans = glm::mat4(1.f);
-    // trans = glm::rotate(trans, glm::radians(-20.f), glm::vec3(.0f, 1.f,
-    // .0f));
+    glm::mat4 trans = glm::mat4(1.f);
+    trans = glm::rotate(trans, (float)glfwGetTime()*glm::radians(50.f), glm::vec3(.0f, 1.f, .0f));
     shader.use();
-    // shader.setMat4("transformation",trans);
+    shader.setMat4("transformation", trans);
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     glfwSwapBuffers(window);
