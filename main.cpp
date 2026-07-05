@@ -21,6 +21,7 @@ const int NUM_PARTICLES{3};
 const float rect_height{0.2f};
 const float rect_width{0.4f};
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+constexpr glm::vec3 lightpos(0.7f, 0.9f, -.4f);
 int main() {
   if (!glfwInit()) {
     exit(EXIT_FAILURE);
@@ -86,7 +87,6 @@ int main() {
   glEnable(GL_DEPTH_TEST);
   Shader shader("4.5.shader.vert", "4.5.shader.frag");
   Shader lightshader("4.5.lightshader.vert", "4.5.lightshader.frag");
-  const glm::vec3 lightpos(0.7f, 0.9f, -.4f);
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -97,14 +97,19 @@ int main() {
     trans = glm::rotate(trans,
                         static_cast<float>(glfwGetTime()) * glm::radians(50.f),
                         glm::vec3(.0f, 1.f, .0f));
-    glm::mat4 view = glm::translate(glm::mat4(1.f),glm::vec3(0.f, 0.f, 0.f));
+    glm::mat4 view = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, 0.f));
     shader.use();
     shader.setVec3("viewpos", camera.Position);
     shader.setVec3("lightpos", lightpos);
-    shader.setVec3("objectcolor", glm::vec3(1.0f, 0.7f, 0.6f));
-    shader.setVec3("lightcolor", glm::vec3(1.0f, 1.0f, 1.0f));
+    shader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
+    shader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
+    shader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
+    shader.setFloat("material.shininess", 32.0f);
+    shader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
+    shader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
+    shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
     shader.setMat4("model", trans);
-    shader.setMat4("view",view);
+    shader.setMat4("view", view);
     shader.setMat4("projection", glm::mat4(1.f));
     glBindVertexArray(cubeVAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
