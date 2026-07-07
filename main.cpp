@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 #include <cmath>
 #include <cstdlib>
+#include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_float4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/vector_float2.hpp>
@@ -12,6 +13,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/trigonometric.hpp>
 #include <iostream>
+#include <ostream>
 // TODO: create a templated Shader class for separate vertex and fragment
 // shaders
 
@@ -20,7 +22,7 @@ const int HEIGHT{600};
 const int NUM_PARTICLES{3};
 const float rect_height{0.2f};
 const float rect_width{0.4f};
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+const Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 constexpr glm::vec3 lightpos(0.7f, 0.9f, -.4f);
 int main() {
   if (!glfwInit()) {
@@ -92,20 +94,19 @@ int main() {
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glm::mat4 trans = glm::mat4(1.f);
-    glm::mat4 projection = glm::perspective(
-        glm::radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
+    glm::mat4 projection = glm::ortho(-1.f,1.f,-1.f,1.f, -5.f, 5.f);
     trans = glm::rotate(trans,
-                        static_cast<float>(glfwGetTime()) * glm::radians(50.f),
+                        static_cast<float>(glfwGetTime()) * glm::radians(45.f),
                         glm::vec3(.0f, 1.f, .0f));
     glm::mat4 view = glm::translate(glm::mat4(1.f), glm::vec3(0.f, 0.f, 0.f));
     shader.use();
     shader.setVec3("viewpos", camera.Position);
-    shader.setVec3("lightpos", lightpos);
     shader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
     shader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
     shader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
     shader.setFloat("material.shininess", 32.0f);
-    shader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
+    shader.setVec3("light.position", lightpos);
+    shader.setVec3("light.ambient", 0.5f, 0.5f, 0.5f);
     shader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
     shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
     shader.setMat4("model", trans);
