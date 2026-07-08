@@ -1,14 +1,12 @@
 #version 450 core
-layout(location = 0) in vec3 pos_a;
-layout(location = 1) in vec3 normal_a;
-out vec3 fragpos;
-out vec3 normal;
+layout (location = 0) in vec2 aPos;
+layout (location = 1) in vec3 aColor;
+layout (location = 2) in vec2 aOffset;
 
-uniform mat4 view;
-uniform mat4 model;
-uniform mat4 projection;
-void main(){
-	fragpos = vec3(model * vec4(pos_a, 1.f));
-	normal = mat3(transpose(inverse(model)))*normal_a;
-	gl_Position = projection*view * vec4(fragpos, 1.0);
+out vec3 fColor;
+
+void main()
+{
+    fColor = aColor;
+    gl_Position = vec4(aPos + aOffset, 0.0, 1.0);
 }
