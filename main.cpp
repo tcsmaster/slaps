@@ -4,7 +4,6 @@
 #include <GLFW/glfw3.h>
 #include <array>
 #include <cmath>
-#include <cstddef>
 #include <cstdlib>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_float4x4.hpp>
@@ -50,36 +49,12 @@ int main() {
       window, [](GLFWwindow *, int w, int h) { glViewport(0, 0, w, h); });
   glClearColor(0.0f, 0.8f, 0.4f, 1.0f);
 
-  // Each instance now carries a single combined model matrix:
-  // model = translate(position) * rotate(angle)
-  // This bakes both the grid offset and the rotation into one mat4,
-  // so there's no separate "add an offset after rotating" step where
-  // a stray w-component (or ordering mistake) can sneak in.
-  std::array<glm::mat4, NUM_PARTICLES> models;
-  int index = 0;
-  float offset = 0.1f;
-  for (int y = -10; y < 10; y += 2) {
-    for (int x = -10; x < 10; x += 2) {
-      glm::vec3 translation;
-      translation.x = (float)x / 10.0f + offset;
-      translation.y = (float)y / 10.0f + offset;
-      translation.z = 0.f;
-
-      glm::mat4 model = glm::translate(glm::mat4(1.f), translation);
-      model = glm::rotate(model,
-                           glm::radians(90.f * static_cast<float>(x) / 10.f),
-                           glm::vec3(0.f, 0.f, 1.f));
-
-      models[index] = model;
-      index += 1;
-    }
-  }
   // store instance data (per-instance model matrices) in an array buffer
   // ----------------------------------------------------------------------
   GLuint modelsVBO;
   glGenBuffers(1, &modelsVBO);
   glBindBuffer(GL_ARRAY_BUFFER, modelsVBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(models), &models[0], GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(models), &models[0], GL_STREAM_DRAW);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   // set up vertex data (and buffer(s)) and configure vertex attributes
   // ------------------------------------------------------------------
@@ -103,11 +78,11 @@ int main() {
   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
                         (void *)(3 * sizeof(float)));
 
-  // per-instance model matrix attribute (occupies locations 3,4,5,6 - one vec4 per column)
+  // per-instance model matrix attribute (occupies locations 3,4,5,6 - one vec4
+  // per column)
   glBindBuffer(GL_ARRAY_BUFFER, modelsVBO);
   glEnableVertexAttribArray(3);
-  glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4),
-                        (void *)0);
+  glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void *)0);
   glEnableVertexAttribArray(4);
   glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4),
                         (void *)(sizeof(glm::vec4)));
@@ -124,30 +99,29 @@ int main() {
   glVertexAttribDivisor(6, 1);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
-
+  int inde = 0;
   Shader shader("4.5.shader.vert", "4.5.shader.frag");
   // render loop
   // -----------
   while (!glfwWindowShouldClose(window)) {
     // render
-    // ------
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     // draw 100 instanced quads
+    glBindBuffer(GL_ARRAY_BUFFER, modelsVBO);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(models), &models[0][0]);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
     shader.use();
     glBindVertexArray(quadVAO);
     glDrawArraysInstanced(GL_TRIANGLES, 0, 6, NUM_PARTICLES);
     glBindVertexArray(0);
-    // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved
-    // etc.)
+    // glfw: swap buffers and poll IO events (keys pressed/released, mouse
+    // moved etc.)
     // -------------------------------------------------------------------------------
     glfwSwapBuffers(window);
     glfwPollEvents();
   }
 
-  // optional: de-allocate all resources once they've outlived their purpose:
-  // ------------------------------------------------------------------------
   glDeleteVertexArrays(1, &quadVAO);
   glDeleteBuffers(1, &quadVBO);
   glDeleteBuffers(1, &modelsVBO);
