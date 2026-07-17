@@ -20,7 +20,6 @@
 
 const int WIDTH{800};
 const int HEIGHT{600};
-const int NUM_PARTICLES{100};
 const float rect_height{0.2f};
 const float rect_width{0.4f};
 int main() {
