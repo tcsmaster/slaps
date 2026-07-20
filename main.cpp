@@ -1,9 +1,11 @@
 #include "camera.hpp"
 #include "glad/glad.h"
+#include "particle.hpp"
 #include "shader_s.hpp"
 #include <GLFW/glfw3.h>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdlib>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_float4x4.hpp>
@@ -15,6 +17,7 @@
 #include <glm/trigonometric.hpp>
 #include <iostream>
 #include <ostream>
+#include <random>
 // TODO: create a templated Shader class for separate vertex and fragment
 // shaders
 
@@ -48,82 +51,32 @@ int main() {
       window, [](GLFWwindow *, int w, int h) { glViewport(0, 0, w, h); });
   glClearColor(0.0f, 0.8f, 0.4f, 1.0f);
 
-  // store instance data (per-instance model matrices) in an array buffer
-  // ----------------------------------------------------------------------
-  GLuint modelsVBO;
-  glGenBuffers(1, &modelsVBO);
-  glBindBuffer(GL_ARRAY_BUFFER, modelsVBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(models), &models[0], GL_STREAM_DRAW);
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  // set up vertex data (and buffer(s)) and configure vertex attributes
-  // ------------------------------------------------------------------
-  float quadVertices[] = {
-      // positions     // colors
-      -0.05f, 0.05f, 0.f,  1.0f,   0.0f,   0.0f, 0.05f, -0.05f, 0.f,
-      0.0f,   1.0f,  0.0f, -0.05f, -0.05f, 0.f,  0.0f,  0.0f,   1.0f,
-
-      -0.05f, 0.05f, 0.f,  1.0f,   0.0f,   0.0f, 0.05f, -0.05f, 0.f,
-      0.0f,   1.0f,  0.0f, 0.05f,  0.05f,  0.f,  0.0f,  1.0f,   1.0f};
-  unsigned int quadVAO, quadVBO;
-  glGenVertexArrays(1, &quadVAO);
-  glGenBuffers(1, &quadVBO);
-  glBindVertexArray(quadVAO);
-  glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices,
-               GL_STATIC_DRAW);
-  glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
-  glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
-                        (void *)(3 * sizeof(float)));
-
-  // per-instance model matrix attribute (occupies locations 3,4,5,6 - one vec4
-  // per column)
-  glBindBuffer(GL_ARRAY_BUFFER, modelsVBO);
-  glEnableVertexAttribArray(3);
-  glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void *)0);
-  glEnableVertexAttribArray(4);
-  glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4),
-                        (void *)(sizeof(glm::vec4)));
-  glEnableVertexAttribArray(5);
-  glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4),
-                        (void *)(2 * sizeof(glm::vec4)));
-  glEnableVertexAttribArray(6);
-  glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4),
-                        (void *)(3 * sizeof(glm::vec4)));
-
-  glVertexAttribDivisor(3, 1);
-  glVertexAttribDivisor(4, 1);
-  glVertexAttribDivisor(5, 1);
-  glVertexAttribDivisor(6, 1);
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindVertexArray(0);
-  int inde = 0;
   Shader shader("4.5.shader.vert", "4.5.shader.frag");
   // render loop
-  // -----------
+  std::array<glm::vec3, NUM_PARTICLES> offsets;
+  std::mt19937 prng(std::random_device{}());
+  std::uniform_real_distribution<float> dist(-1, 1);
+
+  for (std::size_t i{0}; i < NUM_PARTICLES; i++) {
+    float x_c = dist(prng);
+    float y_c = dist(prng);
+    offsets[i] = glm::vec3(x_c, y_c, 1.0f);
+  }
+  Mesh mesh(offsets);
   while (!glfwWindowShouldClose(window)) {
     // render
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // draw 100 instanced quads
-    glBindBuffer(GL_ARRAY_BUFFER, modelsVBO);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(models), &models[0][0]);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
     shader.use();
-    glBindVertexArray(quadVAO);
-    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, NUM_PARTICLES);
-    glBindVertexArray(0);
+    mesh.update();
+    mesh.draw();
     // glfw: swap buffers and poll IO events (keys pressed/released, mouse
     // moved etc.)
     // -------------------------------------------------------------------------------
     glfwSwapBuffers(window);
     glfwPollEvents();
   }
-
-  glDeleteVertexArrays(1, &quadVAO);
-  glDeleteBuffers(1, &quadVBO);
-  glDeleteBuffers(1, &modelsVBO);
 
   glfwTerminate();
   return 0;

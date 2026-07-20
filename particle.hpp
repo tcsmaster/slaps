@@ -23,7 +23,7 @@ public:
   std::array<glm::vec3, NUM_PARTICLES> velocities;
   std::array<float, NUM_PARTICLES> accelerations{};
   std::array<float, NUM_PARTICLES> speeds{0.01f};
-  std::array<glm::mat4, NUM_PARTICLES> model_matrices;
+  std::array<glm::mat4, NUM_PARTICLES> model_matrices{glm::mat4(1.f)};
   GLuint VAO;
   std::array<float, 12> quad_vertices;
   std::array<GLuint, 6> indices;
@@ -33,12 +33,19 @@ public:
     indices = {0, 1, 2, 0, 2, 3};
     setupMesh();
   }
+  ~Mesh() {
+    glDeleteBuffers(1, &quadVBO);
+    glDeleteBuffers(1, &instanceVBO);
+    glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &EBO);
+    glDeleteVertexArrays(1, &VAO);
+  }
   // TODO: Gather data from camera, update the parameters and send position to
   // gpu w/ glbuffersubdata
   void update();
   // render the mesh
-  void Draw() {
-    update();
+  void draw() {
+    // update();
     glBindVertexArray(VAO);
     glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, NUM_PARTICLES);
     glBindVertexArray(0);
@@ -58,7 +65,7 @@ private:
     glBindVertexArray(VAO);
     // load data into vertex buffers
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, offsets.size() * sizeof(glm::vec3),
+    glBufferData(GL_ARRAY_BUFFER, quad_vertices.size() * sizeof(float),
                  &offsets[0], GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
@@ -115,10 +122,12 @@ private:
   void calculate_position(const float time_step) {
     for (std::size_t i{0}; i < offsets.size(); i++) {
       offsets.at(i) =
-          offsets.at(i)+ velocities.at(i) * time_step +
-          glm::vec3(0.5f * accelerations.at(i)* time_step * time_step);
+          offsets.at(i) + velocities.at(i) * time_step +
+          glm::vec3(0.5f * accelerations.at(i) * time_step * time_step);
     }
   }
-  static glm::vec3 position_mapping(glm::vec3 position) {}
+  static glm::vec3 position_mapping(glm::vec3 position) {
+    return glm::vec3(0.01f, 0.01f, .0f);
+  }
 };
 #endif
