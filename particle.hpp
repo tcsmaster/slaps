@@ -10,8 +10,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "shader_s.hpp"
-
 #include <array>
 #include <glm/trigonometric.hpp>
 const float SIDE_LENGTH_HORIZONTAL{0.05f};
@@ -24,9 +22,9 @@ public:
   std::array<float, NUM_PARTICLES> accelerations{};
   std::array<float, NUM_PARTICLES> speeds{0.01f};
   std::array<glm::mat4, NUM_PARTICLES> model_matrices{glm::mat4(1.f)};
-  GLuint VAO;
   std::array<float, 12> quad_vertices;
   std::array<GLuint, 6> indices;
+  GLuint VAO;
   Mesh(std::array<glm::vec3, NUM_PARTICLES> offsets) : offsets{offsets} {
     quad_vertices = {-0.05f, 0.05f,  0.f, 0.05f,  0.05f,  0.f,
                      0.05f,  -0.05f, 0.f, -0.05f, -0.05f, 0.f};
@@ -34,7 +32,6 @@ public:
     setupMesh();
   }
   ~Mesh() {
-    glDeleteBuffers(1, &quadVBO);
     glDeleteBuffers(1, &instanceVBO);
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);
@@ -42,8 +39,14 @@ public:
   }
   // TODO: Gather data from camera, update the parameters and send position to
   // gpu w/ glbuffersubdata
-  void update();
-  // render the mesh
+  void update() {
+    calculate_velocity(offsets);
+    calculate_offsets(0.01f);
+    create_model_matrices();
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(model_matrices) * NUM_PARTICLES,
+                    &model_matrices[0][0]);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+  }
   void draw() {
     // update();
     glBindVertexArray(VAO);
@@ -53,7 +56,7 @@ public:
 
 private:
   // render data
-  GLuint quadVBO, instanceVBO, VBO, EBO;
+  GLuint instanceVBO, VBO, EBO;
 
   // initializes all the buffer objects/arrays
   void setupMesh() {
@@ -72,7 +75,7 @@ private:
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint),
                  &indices[0], GL_STATIC_DRAW);
     // TODO: incorporate the position translation into the model matrix, and
-    // only update the model amtrix on the gpu using glbuffersubdata
+    // only update the model matrix on the gpu using glbuffersubdata
 
     //  set the vertex attribute pointers
     //  vertex positions
@@ -82,6 +85,8 @@ private:
     // instanceVBO;
     glGenBuffers(1, &instanceVBO);
     glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(model_matrices) * NUM_PARTICLES,
+                 &model_matrices[0][0], GL_DYNAMIC_DRAW);
     std::size_t vec4Size = sizeof(glm::vec4);
     // INFO: maybe upload the buffer data later. glBufferData(GL_ARRAY_BUFFER,
     // vec4Size * model_matrices.size(),&model_matrices[0], GL_STATIC_DRAW);
@@ -119,7 +124,7 @@ private:
       offsets.at(i) = position_mapping(offsets.at(i));
     }
   }
-  void calculate_position(const float time_step) {
+  void calculate_offsets(const float time_step) {
     for (std::size_t i{0}; i < offsets.size(); i++) {
       offsets.at(i) =
           offsets.at(i) + velocities.at(i) * time_step +
