@@ -40,11 +40,12 @@ public:
   // TODO: Gather data from camera, update the parameters and send position to
   // gpu w/ glbuffersubdata
   void update() {
-    calculate_velocity(offsets);
+    calculate_velocity();
     calculate_offsets(0.01f);
     create_model_matrices();
+    glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(model_matrices) * NUM_PARTICLES,
-                    &model_matrices[0][0]);
+                    &model_matrices[0]);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
   }
   void draw() {
@@ -58,7 +59,6 @@ private:
   // render data
   GLuint instanceVBO, VBO, EBO;
 
-  // initializes all the buffer objects/arrays
   void setupMesh() {
     // create buffers/arrays
     glGenVertexArrays(1, &VAO);
@@ -86,10 +86,8 @@ private:
     glGenBuffers(1, &instanceVBO);
     glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(model_matrices) * NUM_PARTICLES,
-                 &model_matrices[0][0], GL_DYNAMIC_DRAW);
+                 &model_matrices[0], GL_DYNAMIC_DRAW);
     std::size_t vec4Size = sizeof(glm::vec4);
-    // INFO: maybe upload the buffer data later. glBufferData(GL_ARRAY_BUFFER,
-    // vec4Size * model_matrices.size(),&model_matrices[0], GL_STATIC_DRAW);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size,
                           (const GLvoid *)0);
@@ -118,10 +116,10 @@ private:
       model_matrices.at(i) = glm::transpose(model);
     }
   }
-  void calculate_velocity(std::array<glm::vec3, NUM_PARTICLES> &offsets) {
+  void calculate_velocity() {
     for (std::size_t i{0}; i < NUM_PARTICLES; i++) {
       // TODO: create the mapping from coordinate to velocity
-      offsets.at(i) = position_mapping(offsets.at(i));
+      velocities.at(i) = position_mapping(offsets.at(i));
     }
   }
   void calculate_offsets(const float time_step) {
