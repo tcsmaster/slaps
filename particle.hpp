@@ -44,7 +44,7 @@ public:
     calculate_offsets(0.01f);
     create_model_matrices();
     glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(model_matrices) * NUM_PARTICLES,
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(model_matrices),
                     &model_matrices[0]);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
   }
@@ -85,8 +85,8 @@ private:
     // instanceVBO;
     glGenBuffers(1, &instanceVBO);
     glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(model_matrices) * NUM_PARTICLES,
-                 &model_matrices[0], GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(model_matrices), &model_matrices[0],
+                 GL_DYNAMIC_DRAW);
     std::size_t vec4Size = sizeof(glm::vec4);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size,
