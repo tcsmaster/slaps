@@ -53,7 +53,7 @@ int main() {
   Shader shader("4.5.shader.vert", "4.5.shader.frag");
   // render loop
   std::array<glm::vec3, NUM_PARTICLES> offsets;
-  constexpr std::array<float, 10> coords{-.8f, -7.f,-.6f, -4.f, -2.f,
+  constexpr std::array<float, 10> coords{-.8f, -7.f, -.6f, -4.f, -2.f,
                                          .0f,  .2f,  .4f,  .6f,  .7f};
   for (std::size_t i{0}; i < NUM_PARTICLES; i++) {
     int x_c = i / 10;
@@ -66,11 +66,12 @@ int main() {
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // draw 100 instanced quads
-
+    auto view = glm::translate(glm::mat4(1.f), glm::vec3(.0f, .0f, -3.0f));
     auto perspective = glm::perspective(
-        glm::radians(55.f),
-        static_cast<float>(WIDTH) / static_cast<float>(HEIGHT), -1.f, 100.f);
+        glm::radians(45.f),
+        static_cast<float>(WIDTH) / static_cast<float>(HEIGHT), 0.1f, 10.f);
     shader.use();
+    perspective = perspective * view;
     shader.setMat4("view", perspective);
     mesh.draw();
     // -------------------------------------------------------------------------------
