@@ -1,5 +1,4 @@
-#ifndef MESH_H
-#define MESH_H
+#pragma once
 
 #include <cstddef>
 #include <glad/glad.h>
@@ -19,23 +18,18 @@ class Mesh {
 public:
   std::array<glm::vec3, NUM_PARTICLES> offsets;
   std::array<glm::vec3, NUM_PARTICLES> velocities;
-  std::array<float, NUM_PARTICLES> accelerations{};
-  std::array<float, NUM_PARTICLES> speeds{0.01f};
-  std::array<glm::mat4, NUM_PARTICLES> model_matrices{glm::mat4(1.f)};
-  std::array<float, 12> quad_vertices;
-  std::array<GLuint, 6> indices;
+  std::array<float, NUM_PARTICLES> accelerations{.0f};
+  std::array<float, NUM_PARTICLES> speeds{0.001f};
+  std::array<glm::mat4, NUM_PARTICLES> model_matrices;
+  static constexpr std::array<float, 12> quad_vertices{
+      -0.1f, 0.1f, 0.f, 0.1f, 0.1f, 0.f, 0.1f, -0.1f, 0.f, -0.1f, -0.1f, 0.f};
+  static constexpr std::array<GLuint, 6> indices{0, 1, 2, 0, 2, 3};
   GLuint VAO;
   Mesh(std::array<glm::vec3, NUM_PARTICLES> offsets) : offsets{offsets} {
-    quad_vertices = {-0.05f, 0.05f,  0.f, 0.05f,  0.05f,  0.f,
-                     0.05f,  -0.05f, 0.f, -0.05f, -0.05f, 0.f};
-    indices = {0, 1, 2, 0, 2, 3};
+    for (auto &matrix : model_matrices) {
+      matrix = glm::mat4(1.f);
+    }
     setupMesh();
-  }
-  ~Mesh() {
-    glDeleteBuffers(1, &instanceVBO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
-    glDeleteVertexArrays(1, &VAO);
   }
   // TODO: Gather data from camera, update the parameters and send position to
   // gpu w/ glbuffersubdata
@@ -49,7 +43,7 @@ public:
     glBindBuffer(GL_ARRAY_BUFFER, 0);
   }
   void draw() {
-    // update();
+    update();
     glBindVertexArray(VAO);
     glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, NUM_PARTICLES);
     glBindVertexArray(0);
@@ -69,11 +63,11 @@ private:
     // load data into vertex buffers
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, quad_vertices.size() * sizeof(float),
-                 &offsets[0], GL_STATIC_DRAW);
+                 quad_vertices.data(), GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint),
-                 &indices[0], GL_STATIC_DRAW);
+                 indices.data(), GL_STATIC_DRAW);
     // TODO: incorporate the position translation into the model matrix, and
     // only update the model matrix on the gpu using glbuffersubdata
 
@@ -85,7 +79,7 @@ private:
     // instanceVBO;
     glGenBuffers(1, &instanceVBO);
     glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(model_matrices), &model_matrices[0],
+    glBufferData(GL_ARRAY_BUFFER, sizeof(model_matrices), model_matrices.data(),
                  GL_DYNAMIC_DRAW);
     std::size_t vec4Size = sizeof(glm::vec4);
     glEnableVertexAttribArray(1);
@@ -113,7 +107,7 @@ private:
       glm::mat4 model = glm::mat4(1.0f);
       model = glm::translate(model, offsets.at(i));
       model = glm::rotate(model, glm::radians(45.0f), velocities.at(i));
-      model_matrices.at(i) = glm::transpose(model);
+      model_matrices.at(i) = model;
     }
   }
   void calculate_velocity() {
@@ -133,4 +127,3 @@ private:
     return glm::vec3(0.01f, 0.01f, .0f);
   }
 };
-#endif

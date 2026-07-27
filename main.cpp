@@ -17,7 +17,6 @@
 #include <glm/trigonometric.hpp>
 #include <iostream>
 #include <ostream>
-#include <random>
 // TODO: create a templated Shader class for separate vertex and fragment
 // shaders
 
@@ -54,13 +53,12 @@ int main() {
   Shader shader("4.5.shader.vert", "4.5.shader.frag");
   // render loop
   std::array<glm::vec3, NUM_PARTICLES> offsets;
-  std::mt19937 prng(std::random_device{}());
-  std::uniform_real_distribution<float> dist(-1, 1);
-
+  constexpr std::array<float, 10> coords{-.8f, -7.f,-.6f, -4.f, -2.f,
+                                         .0f,  .2f,  .4f,  .6f,  .7f};
   for (std::size_t i{0}; i < NUM_PARTICLES; i++) {
-    float x_c = dist(prng);
-    float y_c = dist(prng);
-    offsets[i] = glm::vec3(x_c, y_c, 1.0f);
+    int x_c = i / 10;
+    int y_c = i % 10;
+    offsets[i] = glm::vec3(coords.at(y_c), -coords.at(x_c), .0f);
   }
   Mesh mesh(offsets);
   while (!glfwWindowShouldClose(window)) {
@@ -68,14 +66,17 @@ int main() {
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // draw 100 instanced quads
+
+    auto perspective = glm::perspective(
+        glm::radians(55.f),
+        static_cast<float>(WIDTH) / static_cast<float>(HEIGHT), -1.f, 100.f);
     shader.use();
-    mesh.update();
+    shader.setMat4("view", perspective);
     mesh.draw();
     // -------------------------------------------------------------------------------
     glfwSwapBuffers(window);
     glfwPollEvents();
   }
-
   glfwTerminate();
   return 0;
 }
