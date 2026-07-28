@@ -6,6 +6,7 @@
 #include <glm/ext/matrix_float4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/vector_float3.hpp>
+#include <glm/gtc/noise.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -124,6 +125,6 @@ private:
     }
   }
   static glm::vec3 position_mapping(glm::vec3 position) {
-    return glm::vec3(0.01f, 0.01f, .0f);
+    // return glm::vec3(glm::perlin(glm::vec2(position.x, position.y)), .0f);
   }
 };
