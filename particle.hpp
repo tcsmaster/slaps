@@ -6,9 +6,9 @@
 #include <glm/ext/matrix_float4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/vector_float3.hpp>
-#include <glm/gtc/noise.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/noise.hpp>
 
 #include <array>
 #include <glm/trigonometric.hpp>
@@ -20,15 +20,22 @@ public:
   std::array<glm::vec3, NUM_PARTICLES> offsets;
   std::array<glm::vec3, NUM_PARTICLES> velocities;
   std::array<float, NUM_PARTICLES> accelerations{.0f};
-  std::array<float, NUM_PARTICLES> speeds{0.001f};
+  std::array<float, NUM_PARTICLES> speeds{};
   std::array<glm::mat4, NUM_PARTICLES> model_matrices;
   static constexpr std::array<float, 12> quad_vertices{
       -0.1f, 0.1f, 0.f, 0.1f, 0.1f, 0.f, 0.1f, -0.1f, 0.f, -0.1f, -0.1f, 0.f};
   static constexpr std::array<GLuint, 6> indices{0, 1, 2, 0, 2, 3};
+  static constexpr std::array<glm::vec3, 5> vortices{
+      glm::vec3(.0f, .0f, .0f), glm::vec3(.5f, .5f, .0f),
+      glm::vec3(-.5f, .5f, .0f), glm::vec3(.5f, -.5f, .0f),
+      glm::vec3(-.5f, .5f, .0f)};
   GLuint VAO;
   Mesh(std::array<glm::vec3, NUM_PARTICLES> offsets) : offsets{offsets} {
     for (auto &matrix : model_matrices) {
       matrix = glm::mat4(1.f);
+    }
+    for (auto& acc : speeds) {
+    	acc = 0.00001f;
     }
     setupMesh();
   }
@@ -125,6 +132,12 @@ private:
     }
   }
   static glm::vec3 position_mapping(glm::vec3 position) {
-    // return glm::vec3(glm::perlin(glm::vec2(position.x, position.y)), .0f);
+	  glm::vec3 v(.0f);
+	  for (const auto& vortex: vortices) {
+	  	glm::vec3 diff = position - vortex;
+		float r2 = glm::dot(diff, diff) + 0.001f;
+		v += glm::vec3(-diff.y, diff.x, .0f) / r2;
+	  }
+	  return v;
   }
 };
