@@ -14,11 +14,11 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 
 set(OpenCV_DIR "$ENV{HOME}/build")
-find_package(OpenCV 5.0 REQUIRED)
+find_package(OpenCV REQUIRED)
 
 set(DEPS glad glfw glm::glm OpenGL::GL)
 
-add_executable(${PROJECT_NAME} main.cpp)
+add_executable(${PROJECT_NAME} opencv.cpp)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE ${DEPS})
 target_link_libraries(glad PRIVATE ${CMAKE_DL_LIBS})
