@@ -12,28 +12,9 @@ using namespace cv;
 // display it)
 //
 int main(int argc, char **argv) {
-  const std::string about =
-      "This sample demonstrates Lucas-Kanade Optical Flow calculation.\n"
-      "The example file can be downloaded from:\n"
-      "  "
-      "https://www.bogotobogo.com/python/OpenCV_Python/images/"
-      "mean_shift_tracking/slow_traffic_small.mp4";
-  const std::string keys =
-      "{ h help |      | print this help message }"
-      "{ @image | slow_traffic_small.mp4 | path to image file }";
-  CommandLineParser parser(argc, argv, keys);
-  parser.about(about);
-  if (parser.has("help")) {
-    parser.printMessage();
-    return 0;
-  }
-  std::string filename = samples::findFile(parser.get<std::string>("@image"));
-  if (!parser.check()) {
-    parser.printErrors();
-    return 0;
-  }
 
-  VideoCapture capture(0);
+  VideoCapture capture("http://172.31.240.1:8080");
+  // VideoCapture capture(0);
   if (!capture.isOpened()) {
     // error in opening the video input
     std::cerr << "Unable to open file!" << std::endl;
@@ -51,15 +32,10 @@ int main(int argc, char **argv) {
   }
 
   cv::Mat old_frame, old_gray;
-  std::vector<Point2f> p0, p1;
 
   // Take first frame and find corners in it
   capture >> old_frame;
   cvtColor(old_frame, old_gray, COLOR_BGR2GRAY);
-  goodFeaturesToTrack(old_gray, p0, 100, 0.3, 7, Mat(), 7, false, 0.04);
-
-  // Create a mask image for drawing purposes
-  cv::Mat mask = cv::Mat::zeros(old_frame.size(), old_frame.type());
 
   while (true) {
     Mat frame, frame_gray;
@@ -74,21 +50,25 @@ int main(int argc, char **argv) {
     std::vector<float> err;
     TermCriteria criteria =
         TermCriteria((TermCriteria::COUNT) + (TermCriteria::EPS), 10, 0.03);
-    calcOpticalFlowPyrLK(old_gray, frame_gray, p0, p1, status, err,
-                         Size(15, 15), 2, criteria);
-    Mat black = Mat::zeros(frame.size(), frame.type());
-    std::vector<Point2f> good_new;
-    for (uint i = 0; i < p0.size(); i++) {
-      // Select good points
-      if (status[i] == 1) {
-        good_new.push_back(p1[i]);
-        // draw the tracks
-        line(mask, p1[i], p0[i], colors[i], 2);
-        circle(black, p1[i], 5, colors[i], -1);
-      }
-    }
-    Mat img;
-    add(black, mask, img);
+    Mat flow(old_gray.size(), CV_32FC2);
+    calcOpticalFlowFarneback(old_gray, frame_gray, flow, 0.5, 3, 15, 3, 5, 1.2,
+                             0);
+    // Mat black = Mat::zeros(frame.size(), frame // visualization
+    Mat flow_parts[2];
+    split(flow, flow_parts);
+    Mat magnitude, angle, magn_norm;
+    cartToPolar(flow_parts[0], flow_parts[1], magnitude, angle, true);
+    normalize(magnitude, magn_norm, 0.0f, 1.0f, NORM_MINMAX);
+    angle *= ((1.f / 360.f) * (180.f / 255.f));
+    Mat _hsv[3], hsv, hsv8, bgr;
+    _hsv[0] = angle;
+    _hsv[1] = Mat::ones(angle.size(), CV_32F);
+    _hsv[2] = magn_norm;
+    merge(_hsv, 3, hsv);
+    hsv.convertTo(hsv8, CV_8U, 255.0);
+    cvtColor(hsv8, bgr, COLOR_HSV2BGR);
+    Mat img; // build hsv image
+    add(frame, bgr, img);
 
     imshow("Frame", img);
 
@@ -98,6 +78,5 @@ int main(int argc, char **argv) {
 
     // Now update the previous frame and previous points
     old_gray = frame_gray.clone();
-    p0 = good_new;
   }
 }
