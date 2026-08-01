@@ -12,14 +12,12 @@
 
 #include <array>
 #include <glm/trigonometric.hpp>
-const float SIDE_LENGTH_HORIZONTAL{0.05f};
-const float SIDE_LENGTH_VERTICAL{0.01f};
 const int NUM_PARTICLES{100};
 class Mesh {
 public:
   std::array<glm::vec3, NUM_PARTICLES> offsets;
   std::array<glm::vec3, NUM_PARTICLES> velocities;
-  std::array<float, NUM_PARTICLES> accelerations{.0f};
+  std::array<float, NUM_PARTICLES> accelerations;
   std::array<float, NUM_PARTICLES> speeds{};
   std::array<glm::mat4, NUM_PARTICLES> model_matrices;
   static constexpr std::array<float, 12> quad_vertices{
@@ -34,8 +32,11 @@ public:
     for (auto &matrix : model_matrices) {
       matrix = glm::mat4(1.f);
     }
-    for (auto& acc : speeds) {
-    	acc = 0.00001f;
+    for (auto &acc : speeds) {
+      acc = 0.f;
+    }
+    for (auto &acc : accelerations) {
+      acc = 0.f;
     }
     setupMesh();
   }
@@ -44,6 +45,7 @@ public:
   void update() {
     calculate_velocity();
     calculate_offsets(0.01f);
+    boundary_check();
     create_model_matrices();
     glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(model_matrices),
@@ -131,13 +133,26 @@ private:
           glm::vec3(0.5f * accelerations.at(i) * time_step * time_step);
     }
   }
-  static glm::vec3 position_mapping(glm::vec3 position) {
-	  glm::vec3 v(.0f);
-	  for (const auto& vortex: vortices) {
-	  	glm::vec3 diff = position - vortex;
-		float r2 = glm::dot(diff, diff) + 0.001f;
-		v += glm::vec3(-diff.y, diff.x, .0f) / r2;
-	  }
-	  return v;
+  static glm::vec3 position_mapping(glm::vec3 &position) {
+    glm::vec3 v(.0f);
+    for (const auto &vortex : vortices) {
+      glm::vec3 diff = position - vortex;
+      float r2 = glm::dot(diff, diff) + 0.1f;
+      v += glm::vec3(-diff.y, diff.x, .0f) / r2;
+    }
+    return v;
+  }
+  void boundary_check() {
+    for (auto &offset : offsets) {
+      if (offset.x > 1.f) {
+        offset.x = -1.f;
+      } else if (offset.x < -1.f) {
+        offset.x = 1.f;
+      } else if (offset.y > 1.f) {
+        offset.y = -1.f;
+      } else if (offset.y < -1.f) {
+        offset.y = 1.f;
+      }
+    }
   }
 };

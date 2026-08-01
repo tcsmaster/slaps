@@ -18,7 +18,7 @@ find_package(OpenCV REQUIRED)
 
 set(DEPS glad glfw glm::glm OpenGL::GL)
 
-add_executable(${PROJECT_NAME} opencv.cpp)
+add_executable(${PROJECT_NAME} main.cpp)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE ${DEPS})
 target_link_libraries(glad PRIVATE ${CMAKE_DL_LIBS})
