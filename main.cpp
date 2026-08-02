@@ -66,7 +66,7 @@ int main() {
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // draw 100 instanced quads
-    auto view = glm::translate(glm::mat4(1.f), glm::vec3(.0f, .0f, -4.0f));
+    auto view = glm::translate(glm::mat4(1.f), glm::vec3(.0f, .0f, -3.0f));
     auto perspective = glm::perspective(
         glm::radians(45.f),
         static_cast<float>(WIDTH) / static_cast<float>(HEIGHT), 0.1f, 10.f);
