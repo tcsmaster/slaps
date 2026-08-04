@@ -49,8 +49,8 @@ int main() {
   glfwSetFramebufferSizeCallback(
       window, [](GLFWwindow *, int w, int h) { glViewport(0, 0, w, h); });
   glClearColor(0.0f, 0.8f, 0.4f, 1.0f);
-
-  Shader shader("4.5.shader.vert", "4.5.shader.frag");
+  glEnable(GL_DEPTH_TEST);
+  Shader shader("shader.vert", "shader.frag");
   // render loop
   std::array<glm::vec3, NUM_PARTICLES> offsets;
   constexpr std::array<float, 10> coords{-.9f, -.7f, -.6f, -.4f, -2.f,
