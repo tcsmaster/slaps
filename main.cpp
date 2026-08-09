@@ -53,8 +53,8 @@ int main() {
   Shader shader("shader.vert", "shader.frag");
   // render loop
   std::array<glm::vec3, NUM_PARTICLES> offsets;
-  constexpr std::array<float, 10> coords{-.9f, -.7f, -.6f, -.4f, -2.f,
-                                         .0f,  .2f,  .4f,  .6f,  .7f};
+  constexpr std::array<float, 10> coords{-.91f, -.69f, -.5f, -.3f, -1.5f,
+                                         .0f,   .2f,   .4f,  .6f,  .7f};
   for (std::size_t i{0}; i < NUM_PARTICLES; i++) {
     int x_c = i / 10;
     int y_c = i % 10;

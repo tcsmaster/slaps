@@ -116,7 +116,7 @@ private:
     for (std::size_t i{0}; i < model_matrices.size(); i++) {
       glm::mat4 model = glm::mat4(1.0f);
       model = glm::translate(model, offsets.at(i));
-      model = glm::rotate(model, glm::radians(45.0f), velocities.at(i));
+      model = glm::rotate(model, glm::radians(45.0f), glm::vec3(.0f, 0.f, 1.f));
       model_matrices.at(i) = model;
     }
   }
@@ -135,11 +135,8 @@ private:
   }
   static glm::vec3 position_mapping(glm::vec3 &position) {
     glm::vec3 v(.0f);
-    for (const auto &vortex : vortices) {
-      glm::vec3 diff = position - vortex;
-      float r2 = glm::dot(diff, diff) + 0.1f;
-      v += glm::vec3(-diff.y, diff.x, .0f) / r2;
-    }
+    v += glm::vec3(-1.f, .0f, .0f);
+    v += glm::vec3(-0.3f, -0.5f, .0f);
     return v;
   }
   void boundary_check() {
