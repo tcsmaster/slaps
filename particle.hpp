@@ -23,17 +23,13 @@ public:
   static constexpr std::array<float, 12> quad_vertices{
       -0.1f, 0.1f, 0.f, 0.1f, 0.1f, 0.f, 0.1f, -0.1f, 0.f, -0.1f, -0.1f, 0.f};
   static constexpr std::array<GLuint, 6> indices{0, 1, 2, 0, 2, 3};
-  static constexpr std::array<glm::vec3, 5> vortices{
-      glm::vec3(.0f, .0f, .0f), glm::vec3(.5f, .5f, .0f),
-      glm::vec3(-.5f, .5f, .0f), glm::vec3(.5f, -.5f, .0f),
-      glm::vec3(-.5f, .5f, .0f)};
   GLuint VAO;
   Mesh(std::array<glm::vec3, NUM_PARTICLES> offsets) : offsets{offsets} {
     for (auto &matrix : model_matrices) {
       matrix = glm::mat4(1.f);
     }
     for (auto &acc : speeds) {
-      acc = 0.f;
+      acc = 0.1f;
     }
     for (auto &acc : accelerations) {
       acc = 0.f;
@@ -129,7 +125,7 @@ private:
   void calculate_offsets(const float time_step) {
     for (std::size_t i{0}; i < offsets.size(); i++) {
       offsets.at(i) =
-          offsets.at(i) + velocities.at(i) * time_step +
+          offsets.at(i) + speeds.at(i) * velocities.at(i) * time_step +
           glm::vec3(0.5f * accelerations.at(i) * time_step * time_step);
     }
   }
