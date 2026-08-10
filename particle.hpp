@@ -18,7 +18,7 @@ public:
   std::array<glm::vec3, NUM_PARTICLES> offsets;
   std::array<glm::vec3, NUM_PARTICLES> velocities;
   std::array<float, NUM_PARTICLES> accelerations;
-  std::array<float, NUM_PARTICLES> speeds{};
+  std::array<float, NUM_PARTICLES> speeds;
   std::array<glm::mat4, NUM_PARTICLES> model_matrices;
   static constexpr std::array<float, 12> quad_vertices{
       -0.1f, 0.1f, 0.f, 0.1f, 0.1f, 0.f, 0.1f, -0.1f, 0.f, -0.1f, -0.1f, 0.f};
