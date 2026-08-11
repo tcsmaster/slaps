@@ -1,4 +1,3 @@
-#include "camera.hpp"
 #include "glad/glad.h"
 #include "particle.hpp"
 #include "shader_s.hpp"
@@ -17,8 +16,6 @@
 #include <glm/trigonometric.hpp>
 #include <iostream>
 #include <ostream>
-// TODO: create a templated Shader class for separate vertex and fragment
-// shaders
 
 const int WIDTH{800};
 const int HEIGHT{600};
@@ -50,7 +47,7 @@ int main() {
       window, [](GLFWwindow *, int w, int h) { glViewport(0, 0, w, h); });
   glClearColor(0.0f, 0.8f, 0.4f, 1.0f);
   glEnable(GL_DEPTH_TEST);
-  Shader shader("shader.vert", "shader.frag");
+  Shader shader("lightning.vert", "lightning.frag");
   // render loop
   std::array<glm::vec3, NUM_PARTICLES> offsets;
   constexpr std::array<float, 10> coords{-.91f, -.69f, -.5f, -.3f, -1.5f,
@@ -72,7 +69,16 @@ int main() {
         static_cast<float>(WIDTH) / static_cast<float>(HEIGHT), 0.1f, 10.f);
     shader.use();
     perspective = perspective * view;
+    shader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
+    shader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
+    shader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
+    shader.setFloat("material.shininess", 32.0f);
+    shader.setVec3("viewPos", glm::vec3(0.f, 0.f, -0.1f));
     shader.setMat4("view", perspective);
+    shader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
+    shader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
+    shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+    shader.setVec3("light.direction", 0.f, .0f, -1.f);
     mesh.draw();
     // -------------------------------------------------------------------------------
     glfwSwapBuffers(window);

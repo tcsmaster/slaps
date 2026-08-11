@@ -1,8 +1,10 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdlib>
 #include <glad/glad.h>
 
+#include <glm/common.hpp>
 #include <glm/ext/matrix_float4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/vector_float3.hpp>
@@ -11,6 +13,7 @@
 #include <glm/gtc/noise.hpp>
 
 #include <array>
+#include <glm/matrix.hpp>
 #include <glm/trigonometric.hpp>
 const int NUM_PARTICLES{100};
 class Mesh {
@@ -20,8 +23,9 @@ public:
   std::array<float, NUM_PARTICLES> accelerations;
   std::array<float, NUM_PARTICLES> speeds;
   std::array<glm::mat4, NUM_PARTICLES> model_matrices;
-  static constexpr std::array<float, 12> quad_vertices{
-      -0.1f, 0.1f, 0.f, 0.1f, 0.1f, 0.f, 0.1f, -0.1f, 0.f, -0.1f, -0.1f, 0.f};
+  static constexpr std::array<float, 24> quad_vertices{
+      -0.1f, 0.1f,  0.f, 0.f, 0.f, 1.0f, 0.1f,  0.1f,  0.f, 0.f, 0.f, 1.0f,
+      0.1f,  -0.1f, 0.f, 0.f, 0.f, 1.0f, -0.1f, -0.1f, 0.f, 0.f, 0.f, 1.0f};
   static constexpr std::array<GLuint, 6> indices{0, 1, 2, 0, 2, 3};
   GLuint VAO;
   Mesh(std::array<glm::vec3, NUM_PARTICLES> offsets) : offsets{offsets} {
@@ -80,31 +84,35 @@ private:
     //  set the vertex attribute pointers
     //  vertex positions
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
                           (const GLvoid *)0);
+    // vertex normals
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, 6 * sizeof(float),
+                          (const GLvoid *)(3 * sizeof(float)));
     // instanceVBO;
     glGenBuffers(1, &instanceVBO);
     glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(model_matrices), model_matrices.data(),
                  GL_DYNAMIC_DRAW);
     std::size_t vec4Size = sizeof(glm::vec4);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size,
-                          (const GLvoid *)0);
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size,
-                          (const GLvoid *)(vec4Size));
+                          (const GLvoid *)0);
     glEnableVertexAttribArray(3);
     glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size,
-                          (const GLvoid *)(2 * vec4Size));
+                          (const GLvoid *)(vec4Size));
     glEnableVertexAttribArray(4);
     glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size,
+                          (const GLvoid *)(2 * vec4Size));
+    glEnableVertexAttribArray(5);
+    glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size,
                           (const GLvoid *)(3 * vec4Size));
 
-    glVertexAttribDivisor(1, 1);
     glVertexAttribDivisor(2, 1);
     glVertexAttribDivisor(3, 1);
     glVertexAttribDivisor(4, 1);
+    glVertexAttribDivisor(5, 1);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
   }
@@ -119,6 +127,8 @@ private:
   void calculate_velocity() {
     for (std::size_t i{0}; i < NUM_PARTICLES; i++) {
       // TODO: create the mapping from coordinate to velocity
+      // amíg van optical flow vector (pl. vektor hossz nagyobb, mint egy
+      // threshold), addig az a velocity, utána vissza a normálba
       velocities.at(i) = position_mapping(offsets.at(i));
     }
   }
