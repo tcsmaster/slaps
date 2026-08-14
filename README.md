@@ -3,27 +3,8 @@
 This repo contains the source code for the project "Me and the boids", an interactive computer simulation very similar to boids.
 
 Notes:
-- use instanced rendering, all of them look the same.
-- Combine the offsets and the rotations into one model matrix. Possibly create a separate buffer to the quad_vertices, and use glbuffersubdata. check how to do multiple buffer with the shader.
-- optical flow from opencv nad camera.
-
-(-1, 1)
-(-0.8, 1)
-(-0.6, 1)
-(-0.4, 1)
-(-0.2, 1)
-(0., 1)
-(0.2, 1)
-(0.4, 1)
-(0.6, 1)
-(0.8, 1)
-(-1.0, 0.8)
-(-0.8, 0.8)
-(-0.6, 0.8)
-(-0.4, 0.8)
-(-0.2, 0.8)
-(0., 0.8)
-(0.2, 0.8)
-(0.4, 0.8)
-(0.6, 0.8)
-(0.8, 0.8)
+- optical flow from opencv and camera. Try out different dense flows.
+- Need to think about the transition from automatic motion to movement-accelerated motion, then back to automatic.
+- The length of opencv vector cant just be acceleration, because it needs to change the velocity vector. But it should use the vector as the new velocity. Maxbe interpolate between the current and the opencv vector. Use the length of the opencv vector as acceleration.
+- should there even be a looping-around mechanism? The og just let it go out of bounds.
+- make the borders stick to the window sides

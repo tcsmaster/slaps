@@ -62,7 +62,7 @@ int main() {
     // render
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    // draw 100 instanced quads
+
     auto view = glm::translate(glm::mat4(1.f), glm::vec3(.0f, .0f, -3.0f));
     auto perspective = glm::perspective(
         glm::radians(45.f),
@@ -73,7 +73,7 @@ int main() {
     shader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
     shader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
     shader.setFloat("material.shininess", 32.0f);
-    shader.setVec3("viewPos", glm::vec3(0.f, 0.f, -0.1f));
+    shader.setVec3("viewPos", glm::vec3(0.f, 0.f, -2.f));
     shader.setMat4("view", perspective);
     shader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
     shader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
