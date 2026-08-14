@@ -12,23 +12,23 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/noise.hpp>
 
-#include <array>
+#include <vector>
 #include <glm/matrix.hpp>
 #include <glm/trigonometric.hpp>
-const int NUM_PARTICLES{100};
+constexpr int NUM_PARTICLES{100};
 class Mesh {
 public:
-  std::array<glm::vec3, NUM_PARTICLES> offsets;
-  std::array<glm::vec3, NUM_PARTICLES> velocities;
-  std::array<float, NUM_PARTICLES> accelerations;
-  std::array<float, NUM_PARTICLES> speeds;
-  std::array<glm::mat4, NUM_PARTICLES> model_matrices;
+  std::vector<glm::vec3> offsets(NUM_PARTICLES);
+  std::vector<glm::vec3> velocities(NUM_PARTICLES);
+  std::vector<float> accelerations(NUM_PARTICLES);
+  std::vector<float> speeds(NUM_PARTICLES);
+  std::vector<glm::mat4> model_matrices(NUM_PARTICLES);
   static constexpr std::array<float, 24> quad_vertices{
       -0.1f, 0.1f,  0.f, 0.f, 0.f, 1.0f, 0.1f,  0.1f,  0.f, 0.f, 0.f, 1.0f,
       0.1f,  -0.1f, 0.f, 0.f, 0.f, 1.0f, -0.1f, -0.1f, 0.f, 0.f, 0.f, 1.0f};
   static constexpr std::array<GLuint, 6> indices{0, 1, 2, 0, 2, 3};
   GLuint VAO;
-  Mesh(std::array<glm::vec3, NUM_PARTICLES> offsets) : offsets{offsets} {
+  Mesh(std::vector<glm::vec3>& offsets) : offsets{offsets} {
     for (auto &matrix : model_matrices) {
       matrix = glm::mat4(1.f);
     }
@@ -43,6 +43,7 @@ public:
   // TODO: Gather data from camera, update the parameters and send position to
   // gpu w/ glbuffersubdata
   void update() {
+    // TODO: prolly insert the optical flow here
     calculate_velocity();
     calculate_offsets(0.01f);
     boundary_check();
