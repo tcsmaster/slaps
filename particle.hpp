@@ -12,6 +12,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/noise.hpp>
 
+#include <array>
 #include <glm/matrix.hpp>
 #include <glm/trigonometric.hpp>
 #include <vector>
