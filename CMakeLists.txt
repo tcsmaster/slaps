@@ -12,8 +12,11 @@ target_include_directories(glad PUBLIC external/glad/include)
 find_package(OpenGL REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
-
-set(OpenCV_DIR "$ENV{HOME}/build")
+if(UNIX)
+    set(OpenCV_DIR "$ENV{HOME}/build")
+elseif(WIN32)
+    # vcpkg supplies OpenCV_DIR automatically via the toolchain file — nothing needed here
+endif()
 find_package(OpenCV REQUIRED)
 
 set(DEPS glad glfw glm::glm OpenGL::GL)

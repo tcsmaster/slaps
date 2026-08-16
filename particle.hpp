@@ -12,23 +12,21 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/noise.hpp>
 
-#include <vector>
 #include <glm/matrix.hpp>
 #include <glm/trigonometric.hpp>
+#include <vector>
 constexpr int NUM_PARTICLES{100};
 class Mesh {
 public:
-  std::vector<glm::vec3> offsets(NUM_PARTICLES);
-  std::vector<glm::vec3> velocities(NUM_PARTICLES);
-  std::vector<float> accelerations(NUM_PARTICLES);
-  std::vector<float> speeds(NUM_PARTICLES);
-  std::vector<glm::mat4> model_matrices(NUM_PARTICLES);
   static constexpr std::array<float, 24> quad_vertices{
       -0.1f, 0.1f,  0.f, 0.f, 0.f, 1.0f, 0.1f,  0.1f,  0.f, 0.f, 0.f, 1.0f,
       0.1f,  -0.1f, 0.f, 0.f, 0.f, 1.0f, -0.1f, -0.1f, 0.f, 0.f, 0.f, 1.0f};
   static constexpr std::array<GLuint, 6> indices{0, 1, 2, 0, 2, 3};
   GLuint VAO;
-  Mesh(std::vector<glm::vec3>& offsets) : offsets{offsets} {
+  Mesh(std::vector<glm::vec3> &offsets)
+      : offsets{offsets}, velocities(NUM_PARTICLES),
+        accelerations(NUM_PARTICLES), speeds(NUM_PARTICLES),
+        model_matrices(NUM_PARTICLES) {
     for (auto &matrix : model_matrices) {
       matrix = glm::mat4(1.f);
     }
@@ -40,6 +38,11 @@ public:
     }
     setupMesh();
   }
+  std::vector<glm::vec3> offsets;
+  std::vector<glm::vec3> velocities;
+  std::vector<float> accelerations;
+  std::vector<float> speeds;
+  std::vector<glm::mat4> model_matrices;
   // TODO: Gather data from camera, update the parameters and send position to
   // gpu w/ glbuffersubdata
   void update() {
@@ -49,7 +52,8 @@ public:
     boundary_check();
     create_model_matrices();
     glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(model_matrices),
+    glBufferSubData(GL_ARRAY_BUFFER, 0,
+                    model_matrices.size() * sizeof(glm::mat4),
                     &model_matrices[0]);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
   }
@@ -94,8 +98,8 @@ private:
     // instanceVBO;
     glGenBuffers(1, &instanceVBO);
     glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(model_matrices), model_matrices.data(),
-                 GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, model_matrices.size() * sizeof(glm::mat4),
+                 model_matrices.data(), GL_DYNAMIC_DRAW);
     std::size_t vec4Size = sizeof(glm::vec4);
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size,
@@ -152,7 +156,8 @@ private:
         offset.x = -1.f;
       } else if (offset.x < -1.f) {
         offset.x = 1.f;
-      } else if (offset.y > 1.f) {
+      }
+      if (offset.y > 1.f) {
         offset.y = -1.f;
       } else if (offset.y < -1.f) {
         offset.y = 1.f;

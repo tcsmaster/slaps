@@ -16,6 +16,7 @@
 #include <glm/trigonometric.hpp>
 #include <iostream>
 #include <ostream>
+#include <vector>
 
 const int WIDTH{800};
 const int HEIGHT{600};
@@ -49,13 +50,13 @@ int main() {
   glEnable(GL_DEPTH_TEST);
   Shader shader("lightning.vert", "lightning.frag");
   // render loop
-  std::array<glm::vec3, NUM_PARTICLES> offsets;
+  std::vector<glm::vec3> offsets;
   constexpr std::array<float, 10> coords{-.91f, -.69f, -.5f, -.3f, -1.5f,
                                          .0f,   .2f,   .4f,  .6f,  .7f};
   for (std::size_t i{0}; i < NUM_PARTICLES; i++) {
     int x_c = i / 10;
     int y_c = i % 10;
-    offsets[i] = glm::vec3(coords.at(y_c), -coords.at(x_c), .0f);
+    offsets.push_back(glm::vec3(coords.at(y_c), -coords.at(x_c), .0f));
   }
   Mesh mesh(offsets);
   while (!glfwWindowShouldClose(window)) {
