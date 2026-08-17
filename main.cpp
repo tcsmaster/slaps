@@ -49,7 +49,16 @@ int main() {
   glClearColor(0.0f, 0.8f, 0.4f, 1.0f);
   glEnable(GL_DEPTH_TEST);
   Shader shader("lightning.vert", "lightning.frag");
-  // render loop
+  shader.use();
+  shader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
+  shader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
+  shader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
+  shader.setFloat("material.shininess", 32.0f);
+  shader.setVec3("viewPos", glm::vec3(0.f, 0.f, -2.f));
+  shader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
+  shader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
+  shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+  shader.setVec3("light.direction", 0.f, .0f, -1.f);
   std::vector<glm::vec3> offsets;
   constexpr std::array<float, 10> coords{-.91f, -.69f, -.5f, -.3f, -1.5f,
                                          .0f,   .2f,   .4f,  .6f,  .7f};
@@ -59,6 +68,7 @@ int main() {
     offsets.push_back(glm::vec3(coords.at(y_c), -coords.at(x_c), .0f));
   }
   Mesh mesh(offsets);
+  // render loop
   while (!glfwWindowShouldClose(window)) {
     // render
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -70,16 +80,7 @@ int main() {
         static_cast<float>(WIDTH) / static_cast<float>(HEIGHT), 0.1f, 10.f);
     shader.use();
     perspective = perspective * view;
-    shader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
-    shader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
-    shader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
-    shader.setFloat("material.shininess", 32.0f);
-    shader.setVec3("viewPos", glm::vec3(0.f, 0.f, -2.f));
     shader.setMat4("view", perspective);
-    shader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
-    shader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
-    shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
-    shader.setVec3("light.direction", 0.f, .0f, -1.f);
     mesh.draw();
     // -------------------------------------------------------------------------------
     glfwSwapBuffers(window);
