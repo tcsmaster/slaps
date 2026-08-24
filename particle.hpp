@@ -16,6 +16,7 @@
 #include <glm/matrix.hpp>
 #include <glm/trigonometric.hpp>
 #include <vector>
+namespace Particle {
 constexpr int NUM_PARTICLES{100};
 class Mesh {
 public:
@@ -39,11 +40,6 @@ public:
     }
     setupMesh();
   }
-  std::vector<glm::vec3> offsets;
-  std::vector<glm::vec3> velocities;
-  std::vector<float> accelerations;
-  std::vector<float> speeds;
-  std::vector<glm::mat4> model_matrices;
   // TODO: Gather data from camera, update the parameters and send position to
   // gpu w/ glbuffersubdata
   void update() {
@@ -69,6 +65,11 @@ private:
   // render data
   GLuint instanceVBO, VBO, EBO;
 
+  std::vector<glm::vec3> offsets;
+  std::vector<glm::vec3> velocities;
+  std::vector<float> accelerations;
+  std::vector<float> speeds;
+  std::vector<glm::mat4> model_matrices;
   void setupMesh() {
     // create buffers/arrays
     glGenVertexArrays(1, &VAO);
@@ -166,3 +167,4 @@ private:
     }
   }
 };
+} // namespace Particle

@@ -1,15 +1,23 @@
-#include <iostream>
+#include "opencv.hpp"
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 #include <opencv2/optflow.hpp>
+#include <opencv2/optflow/rlofflow.hpp>
 #include <opencv2/video.hpp>
 #include <opencv2/video/tracking.hpp>
 #include <opencv2/videoio.hpp>
-
+namespace Popencv {
+enum class OpticalFlowMethod {
+  DIS,
+  Farneback,
+  SparseToDense,
+  DenseRLOF,
+  DualTVL1
+};
 cv::Mat visualizeOpticalFlowArrows(const cv::Mat &flow,
-                                   const cv::Mat &background, int step = 16) {
+                                   const cv::Mat &background, int step) {
   cv::Mat out;
   if (background.channels() == 1)
     cvtColor(background, out, cv::COLOR_GRAY2BGR);
@@ -28,10 +36,19 @@ cv::Mat visualizeOpticalFlowArrows(const cv::Mat &flow,
   }
   return out;
 }
-
-// Encodes a dense optical flow field as a BGR image: hue maps direction,
-// value maps magnitude (normalized per-frame).
-cv::Mat visualizeOpticalFlow(const cv::Mat &flow, float threshold) {
+cv::Mat OptflowPostprocessing(cv::Mat &optflow, float threshold) {
+  cv::Mat magnitude, angle, mask, masked_magn_1, masked_magn_2, output;
+  cv::Mat flow_parts[2];
+  split(optflow, flow_parts);
+  cartToPolar(flow_parts[0], flow_parts[1], magnitude, angle, true);
+  cv::threshold(magnitude, mask, threshold, 0.0, 0);
+  cv::bitwise_or(flow_parts[0], mask, masked_magn_1);
+  cv::bitwise_or(flow_parts[1], mask, masked_magn_2);
+  std::vector<cv::Mat> mats{flow_parts[0], flow_parts[1]};
+  cv::merge(mats.data(), 2, output);
+  return output;
+}
+cv::Mat visualizeOpticalFlow(const cv::Mat &flow) {
   cv::Mat flow_parts[2];
   split(flow, flow_parts);
   cv::Mat magnitude, angle, magn_norm;
@@ -53,40 +70,4 @@ cv::Mat visualizeOpticalFlow(const cv::Mat &flow, float threshold) {
 // INFO: create a stream, write the webcam feed intot the stream (potentially
 // display it)
 //
-int main(int argc, char **argv) {
-  cv::VideoCapture capture(0);
-  if (!capture.isOpened()) {
-    // error in opening the video input
-    std::cerr << "Unable to open file!" << std::endl;
-    return 0;
-  }
-
-  cv::Mat old_frame, old_gray;
-
-  capture >> old_frame;
-  cvtColor(old_frame, old_gray, cv::COLOR_BGR2GRAY);
-
-  while (true) {
-    cv::Mat frame2, next;
-    capture >> frame2;
-    if (frame2.empty())
-      break;
-    cvtColor(frame2, next, cv::COLOR_BGR2GRAY);
-
-    cv::Mat flow(old_gray.size(), CV_32FC2);
-    cv::optflow::calcOpticalFlowSparseToDense(old_gray, next, flow, 8, 128,
-                                              0.05f, false);
-
-    cv::Mat bgr = visualizeOpticalFlowArrows(flow, frame2);
-    cv::Mat bgr_2 = visualizeOpticalFlow(flow);
-    imshow("real", bgr);
-    imshow("Frame", bgr_2);
-    // TODO: flip the output of the optical flow horizontally to mirror it
-    int keyboard = cv::waitKey(30);
-    if (keyboard == 'q' || keyboard == 27)
-      break;
-
-    // Now update the previous frame and previous points
-    old_gray = next.clone();
-  }
-}
+} // namespace Popencv

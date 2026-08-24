@@ -62,12 +62,12 @@ int main() {
   std::vector<glm::vec3> offsets;
   constexpr std::array<float, 10> coords{-.91f, -.69f, -.5f, -.3f, -1.5f,
                                          .0f,   .2f,   .4f,  .6f,  .7f};
-  for (std::size_t i{0}; i < NUM_PARTICLES; i++) {
+  for (std::size_t i{0}; i < Particle::NUM_PARTICLES; i++) {
     int x_c = i / 10;
     int y_c = i % 10;
     offsets.push_back(glm::vec3(coords.at(y_c), -coords.at(x_c), .0f));
   }
-  Mesh mesh(offsets);
+  Particle::Mesh mesh(offsets);
   // render loop
   while (!glfwWindowShouldClose(window)) {
     // render
