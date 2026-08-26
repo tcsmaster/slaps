@@ -1,4 +1,4 @@
-#include "opencv.hpp"
+#include "opencvinput.hpp"
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
@@ -8,16 +8,42 @@
 #include <opencv2/video.hpp>
 #include <opencv2/video/tracking.hpp>
 #include <opencv2/videoio.hpp>
-namespace Popencv {
-enum class OpticalFlowMethod {
-  DIS,
-  Farneback,
-  SparseToDense,
-  DenseRLOF,
-  DualTVL1
-};
-cv::Mat visualizeOpticalFlowArrows(const cv::Mat &flow,
-                                   const cv::Mat &background, int step) {
+namespace OpenCVInput {
+FlowFunc CalculateOpticalFlow(OpticalFlowMethod method) {
+  switch (method) {
+  case OpticalFlowMethod::SparseToDense:
+    return [](const cv::Mat &prev, const cv::Mat &next, cv::Mat &flow) {
+      cv::optflow::calcOpticalFlowSparseToDense(prev, next, flow);
+    };
+  case OpticalFlowMethod::DenseRLOF: {
+    auto denser = cv::optflow::RLOFOpticalFlowParameter::create();
+    return [denser](const cv::Mat &prev, const cv::Mat &next, cv::Mat &flow) {
+      cv::optflow::calcOpticalFlowDenseRLOF(prev, next, flow, denser);
+    };
+  }
+  case OpticalFlowMethod::DIS: {
+    // create the instance once, capture it by shared_ptr in the lambda
+    auto dis = cv::DISOpticalFlow::create(cv::DISOpticalFlow::PRESET_MEDIUM);
+    return [dis](const cv::Mat &prev, const cv::Mat &next, cv::Mat &flow) {
+      dis->calc(prev, next, flow);
+    };
+  }
+  case OpticalFlowMethod::DualTVL1: {
+    auto denser = cv::optflow::DualTVL1OpticalFlow::create();
+    return [denser](const cv::Mat &prev, const cv::Mat &next, cv::Mat flow) {
+      denser->calc(prev, next, flow);
+    };
+  }
+  case OpticalFlowMethod::Farneback:
+    return [](const cv::Mat &prev, const cv::Mat &next, cv::Mat &flow) {
+      cv::calcOpticalFlowFarneback(prev, next, flow, 0.5, 5, 20, 5, 10, 1.1,
+                                   cv::OPTFLOW_USE_INITIAL_FLOW);
+    };
+  }
+  throw std::invalid_argument("Unhandled OpticalFlowMethod");
+}
+cv::Mat visualizeOpticalFlowArrows(cv::Mat &flow, cv::Mat &background,
+                                   int step) {
   cv::Mat out;
   if (background.channels() == 1)
     cvtColor(background, out, cv::COLOR_GRAY2BGR);
@@ -48,7 +74,7 @@ cv::Mat OptflowPostprocessing(cv::Mat &optflow, float threshold) {
   cv::merge(mats.data(), 2, output);
   return output;
 }
-cv::Mat visualizeOpticalFlow(const cv::Mat &flow) {
+cv::Mat visualizeOpticalFlow(cv::Mat &flow) {
   cv::Mat flow_parts[2];
   split(flow, flow_parts);
   cv::Mat magnitude, angle, magn_norm;
@@ -66,8 +92,7 @@ cv::Mat visualizeOpticalFlow(const cv::Mat &flow) {
   cvtColor(hsv8, bgr, cv::COLOR_HSV2BGR);
   return bgr;
 }
-
 // INFO: create a stream, write the webcam feed intot the stream (potentially
 // display it)
 //
-} // namespace Popencv
+} // namespace OpenCVInput
