@@ -1,5 +1,3 @@
-#pragma once
-
 #include <cstddef>
 #include <cstdlib>
 #include <glad/glad.h>

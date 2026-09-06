@@ -11,7 +11,19 @@ Notes:
 - all the different pose estimations (blazepose, openpose)
 - map the skeletal position to the view space
 
-Tried out optical flow algorithms, sparse vs dense, it works really good for motion, but whenever there is no motion, noise comes in (clipping works well). However, it would move all sprites with my body, instead I just want a few sprites to move. Pivot to skeletal tracking
+OpenCV webcam
+      ↓
+cv::Mat
+      ↓
+OpenVINO GPU
+      ↓
+Pose
+      ↓
+OpenGL SSBO
+      ↓
+Render
 
-References:
+Tried out optical flow algorithms, sparse vs dense, it works really good for motion, but whenever there is no motion, noise comes in (clipping works well). However, it would move all sprites with my body, instead I just want a few sprites to move. Pivot to skeletal tracking. Needs onnxruntime. With my iGPU, I need to build the appropriate version of onnxruntime using openvino. ONNX does/needs hardware interface to run the models more efficiently, called Execution Providers (EP). For Intel cpu, gpu, there is oneDNN and OpenVino. I use the latter.
+## References:
 - [curl noise vector field](https://emildziewanowski.com/curl-noise/)
+- [noise shader](https://github.com/ashima/webgl-noise)

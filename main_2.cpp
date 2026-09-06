@@ -7,7 +7,17 @@
 #include <opencv2/video.hpp>
 #include <opencv2/video/tracking.hpp>
 #include <opencv2/videoio.hpp>
+
 int main(int argc, char **argv) {
+  Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "test");
+  Ort::SessionOptions session_options;
+
+  // Add OpenVINO EP, targeting GPU
+  std::unordered_map<std::string, std::string> ov_options;
+  ov_options["device_type"] = "GPU";
+  session_options.AppendExecutionProvider("OpenVINO", ov_options);
+
+  Ort::Session session(env, "pose_landmark_full.onnx", session_options);
   cv::VideoCapture camera(0);
   if (!camera.isOpened()) {
     // error in opening the video input

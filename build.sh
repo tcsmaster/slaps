@@ -4,7 +4,7 @@ verify_build_folder_exists() {
     mkdir build
   fi
 }
-
+source /opt/intel/openvino/setupvars.sh
 # Check that there is a build folder here.
 verify_build_folder_exists
 
