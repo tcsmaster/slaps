@@ -15,15 +15,26 @@
 #include <glm/matrix.hpp>
 #include <glm/trigonometric.hpp>
 #include <vector>
-namespace Particle {
 constexpr int NUM_PARTICLES{100};
-class Mesh {
+struct Particle {
+  glm::vec3 offset;
+  glm::vec3 velocity;
+  float phi;
+  float theta;
+  float life;
+  Particle()
+      : offset(glm::vec3(0.f)), velocity(glm::vec3(0.f)), phi(0.f),
+        theta(glm::radians(90.f)), life(6.f) {};
+  // TODO: different constructor for each supplied part
+};
+class ParticleSystem {
 public:
   GLuint VAO;
-  Mesh(std::vector<glm::vec3> &offsets);
+  ParticleSystem(std::vector<glm::vec3> &offsets);
   // exercise: define all 5
-  Mesh(const Mesh &mesh) = default;
-  Mesh &operator=(const Mesh &mesh) = default;
+  ParticleSystem(const ParticleSystem &mesh) = default;
+  ParticleSystem &operator=(const ParticleSystem &mesh) = default;
+
   void update();
   void draw();
 
@@ -35,16 +46,13 @@ private:
       -0.1f, 0.1f,  0.f, 0.f, 0.f, 1.0f, 0.1f,  0.1f,  0.f, 0.f, 0.f, 1.0f,
       0.1f,  -0.1f, 0.f, 0.f, 0.f, 1.0f, -0.1f, -0.1f, 0.f, 0.f, 0.f, 1.0f};
   static constexpr std::array<GLuint, 6> indices{0, 1, 2, 0, 2, 3};
-  std::vector<glm::vec3> offsets;
-  std::vector<glm::vec3> velocities;
-  std::vector<float> accelerations;
-  std::vector<float> speeds;
-  std::vector<glm::mat4> model_matrices;
-  void setupMesh();
-  void create_model_matrices();
+  int LastDeadElement = 0;
+  std::vector<Particle> particles;
+  void findLastDeadParticle();
+  void RefillDeadParticle(Particle particle);
+  void setupParticleSystem();
   void calculate_velocity();
   void calculate_offsets(const float time_step);
   static glm::vec3 position_mapping(glm::vec3 &position);
   void boundary_check();
 };
-} // namespace Particle

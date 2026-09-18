@@ -1,3 +1,4 @@
+#include <onnxruntime_cxx_api.h>
 #include <opencv2/core.hpp>
 #include <opencv2/core/types.hpp>
 #include <opencv2/highgui.hpp>
@@ -25,20 +26,16 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  cv::Mat old_frame, old_gray, flow;
-  camera >> old_frame;
-  cvtColor(old_frame, old_gray, cv::COLOR_BGR2GRAY);
-  cv::Mat frame2, next;
+  cv::Mat old_frame;
   while (true) {
     // TODO: flip the output of the optical flow horizontally to mirror it
-    camera >> frame2;
-    cvtColor(frame2, next, cv::COLOR_BGR2GRAY);
+    camera >> old_frame;
+    session.inference();
     int keyboard = cv::waitKey(30);
     if (keyboard == 'q' || keyboard == 27)
       break;
 
     // Now update the previous frame and previous points
-    old_gray = next.clone();
   }
   return 0;
 }
