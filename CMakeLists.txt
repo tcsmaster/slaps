@@ -23,7 +23,7 @@ endif()
 find_package(OpenCV REQUIRED)
  
 
-add_executable(${PROJECT_NAME} main_2.cpp)
+add_executable(${PROJECT_NAME} src/main_2.cpp)
 # --- ONNX Runtime include paths ---
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${ORT_ROOT}/include

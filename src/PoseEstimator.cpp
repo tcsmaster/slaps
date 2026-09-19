@@ -1,7 +1,5 @@
-#include "onix.hpp"
+#include "PoseEstimator.hpp"
 #include <iostream>
-
-namespace Onix {
 auto OnixInstance::initialize() {
   auto env =
       Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, model_name.c_str());
@@ -73,7 +71,6 @@ OnixInstance::match_common_memory_info(const Ort::Session &input_session,
       }
     }
   }
-  // If impossible then also allow to fall back to CPU
   for (auto &in : input_infos) {
     for (auto &out : output_infos) {
       if (in == out) {
@@ -141,4 +138,3 @@ OnixInstance::create_session(Ort::Env &env, std::filesystem::path &model_file,
   return session;
 }
 auto OnixInstance::load_onnx_model() {}
-}// namespace Onix

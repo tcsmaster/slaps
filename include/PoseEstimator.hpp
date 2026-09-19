@@ -5,7 +5,6 @@
 #include <filesystem>
 #include <string_view>
 
-namespace Onix {
 using OrtFileString = std::basic_string<ORTCHAR_T>;
 class OnixInstance {
 
@@ -31,4 +30,3 @@ private:
                               const Ort::SessionOptions &session_options);
   auto load_onnx_model();
 };
-}; // namespace Onix

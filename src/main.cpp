@@ -1,6 +1,6 @@
 #include "glad/glad.h"
-#include "particle.hpp"
 #include "shader_s.hpp"
+#include "src/Rendering/particle.hpp"
 #include <GLFW/glfw3.h>
 #include <cmath>
 #include <cstdlib>
@@ -48,32 +48,18 @@ int main() {
   glClearColor(0.0f, 0.8f, 0.4f, 1.0f);
   glEnable(GL_DEPTH_TEST);
   Shader shader("lightning.vert", "lightning.frag");
-  shader.use();
-  shader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
-  shader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
-  shader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
-  shader.setFloat("material.shininess", 32.0f);
-  shader.setVec3("viewPos", glm::vec3(0.f, 0.f, -2.f));
-  shader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
-  shader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
-  shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
-  shader.setVec3("light.direction", 0.f, .0f, -1.f);
   glm::mat4 view = glm::translate(glm::mat4(1.f), glm::vec3(.0f, .0f, -3.0f));
   glm::mat4 perspective = glm::ortho(0.f, 800.f, 0.f, 600.f, 0.1f, 100.f);
   perspective = perspective * view;
   shader.setMat4("view", perspective);
-  std::vector<glm::vec3> offsets;
   std::random_device r;
   std::default_random_engine gen2(r());
-  Particle::Mesh mesh(offsets);
   // render loop
   while (!glfwWindowShouldClose(window)) {
     // render
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     shader.use();
-    mesh.draw();
     // -------------------------------------------------------------------------------
     glfwSwapBuffers(window);
     glfwPollEvents();

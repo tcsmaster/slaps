@@ -28,9 +28,8 @@ int main(int argc, char **argv) {
 
   cv::Mat old_frame;
   while (true) {
-    // TODO: flip the output of the optical flow horizontally to mirror it
     camera >> old_frame;
-    session.inference();
+    session.Run(); // TODO: put this in its onw file
     int keyboard = cv::waitKey(30);
     if (keyboard == 'q' || keyboard == 27)
       break;

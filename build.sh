@@ -1,11 +1,16 @@
 #!/bin/bash
+set -e
+
+cd "$(dirname "${BASH_SOURCE[0]}")"
+
 verify_build_folder_exists() {
   if [ ! -d "build" ]; then
     mkdir build
   fi
 }
+
 source /opt/intel/openvino/setupvars.sh
-# Check that there is a build folder here.
+
 verify_build_folder_exists
 
 # Navigate into the build folder

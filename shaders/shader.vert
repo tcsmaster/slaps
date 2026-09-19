@@ -4,7 +4,7 @@ layout(std430, binding = 0) buffer ParticleBuffer {
     Particle particles[];
 };
 
-uniform mat4 viewProj;
+uniform mat4 viewPos;
 uniform float spriteScale;
 
 void main() {
@@ -15,5 +15,5 @@ void main() {
     mat2 rot = mat2(c, s, -s, c);
 
     vec2 worldPos = p.pos + rot * (quadVertex * spriteScale);
-    gl_Position = viewProj * vec4(worldPos, 0.0, 1.0);
+    gl_Position = viewPos * vec4(worldPos, 0.0, 1.0);
 }

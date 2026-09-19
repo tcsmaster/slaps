@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <cstddef>
 #include <cstdlib>
 #include <glad/glad.h>
@@ -12,13 +11,9 @@
 #include <glm/gtc/noise.hpp>
 
 #include "particle.hpp"
-#include <algorithm>
-#include <array>
 #include <glm/matrix.hpp>
 #include <glm/trigonometric.hpp>
-#include <vector>
-namespace Particle {
-ParticleSystem::ParticleSystem(std::vector<glm::vec3> &offsets) {
+ParticleSystem::ParticleSystem(std::vector<Particle> &particles) {
   setupParticleSystem();
 }
 void ParticleSystem::setupParticleSystem() {
@@ -36,50 +31,47 @@ void ParticleSystem::setupParticleSystem() {
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLuint),
                indices.data(), GL_STATIC_DRAW);
-  // TODO: incorporate the position translation into the model matrix, and
-  // only update the model matrix on the gpu using glbuffersubdata
 
-  //  set the vertex attribute pointers
-  //  vertex positions
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
                         (const GLvoid *)0);
-  // vertex normals
-  glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, 6 * sizeof(float),
-                        (const GLvoid *)(3 * sizeof(float)));
-  // instanceVBO;
-  glGenBuffers(1, &instanceVBO);
-  glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-  std::size_t vec4Size = sizeof(glm::vec4);
-  glEnableVertexAttribArray(2);
-  glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size,
-                        (const GLvoid *)0);
-  glEnableVertexAttribArray(3);
-  glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size,
-                        (const GLvoid *)(vec4Size));
-  glEnableVertexAttribArray(4);
-  glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size,
-                        (const GLvoid *)(2 * vec4Size));
-  glEnableVertexAttribArray(5);
-  glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size,
-                        (const GLvoid *)(3 * vec4Size));
+  // TODO: finish the SSBO;
+  glGenBuffers(1, &particlesSSBO);
+  glBindBuffer(GL_ARRAY_BUFFER, particlesSSBO);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, particles.size(), particles.data(),
+               GL_DYNAMIC_READ);
 
-  glVertexAttribDivisor(2, 1);
-  glVertexAttribDivisor(3, 1);
-  glVertexAttribDivisor(4, 1);
-  glVertexAttribDivisor(5, 1);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
 }
+void ParticleSystem::render(Shader &frag_vec_shader, Shader &comp_shader) {
+  comp_shader.use();
+  glDispatchCompute(512, 512, 1);
+  glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+  // TODO: decide if this needs lighting at all
+  // TODO: also set viewPos once.
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  frag_vec_shader.use();
+  frag_vec_shader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
+  frag_vec_shader.setVec3("material.diffuse", 1.0f, 0.5f, 0.31f);
+  frag_vec_shader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
+  frag_vec_shader.setFloat("material.shininess", 32.0f);
+  frag_vec_shader.setVec3("viewPos", glm::vec3(0.f, 0.f, -2.f));
+  frag_vec_shader.setVec3("viewPos", glm::vec3(0.f, 0.f, -2.f));
+  frag_vec_shader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
+  frag_vec_shader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
+  frag_vec_shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+  frag_vec_shader.setVec3("light.direction", 0.f, .0f, -1.f);
+  GL_DRAW_ELEMENTS_INSTANCED();
+}
 void ParticleSystem::findLastDeadParticle() {
-  for (unsigned int i = LastDeadElement; i < particles.size(); ++i) {
+  for (std::size_t i{LastDeadElement}; i < particles.size(); ++i) {
     if (particles[i].life <= 0.0f) {
       LastDeadElement = i;
     }
   }
   // otherwise, do a linear search
-  for (unsigned int i = 0; i < LastDeadElement; ++i) {
+  for (std::size_t i{0}; i < LastDeadElement; ++i) {
     if (particles[i].life <= 0.0f) {
       LastDeadElement = i;
     }
@@ -87,10 +79,9 @@ void ParticleSystem::findLastDeadParticle() {
   // override first particle if all others are alive
   LastDeadElement = 0;
 }
-void ParticleSystem::RefillDeadParticle(Particle &particle) {
+void ParticleSystem::RefillDeadParticle() {
   Particle &p = particles[LastDeadElement];
-  p.offset = particle.offset + rand() * 0.1;
-  p.velocity = particle.velocity + rand() * 0.1;
+  p.offset = p.offset + rand() * 0.1;
+  p.velocity = p.velocity + rand() * 0.1;
   // TODO: finish this
 };
-}; // namespace Particle

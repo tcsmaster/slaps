@@ -1,0 +1,73 @@
+#version 450 core
+//TODO: apparently in 3d you need 3 different coordinate functions for noise. Either create 3 different, or use one but at larger offsets. Current is the latter
+//Note that if the noise function is based on the integer lattice and
+// smoothly varies in the range [−1, 1], then the partial derivatives
+// of the scaled N(x/L) will vary over a length-scale L with values
+// approximately in the range O([−1/L, 1/L]). This means we can
+// expect vortices of diameter approximately L and speeds up to ap-
+// proximately O(1/L): the user may use this to scale the magnitude
+// of ψ to get a desired speed.
+// Source: Curl-Noise for Procedural Fluid Flow
+vec2 curlNoise(vec3 p) {
+    float eps = 0.001;
+    float big_oofset = vec3(10);
+    float phi1z1 = noise(p + vec3(0, 0, eps));
+    float phi1z2 = noise(p - vec3(0, 0, eps));
+    float phi1y1 = noise(p + vec3(0, eps, 0));
+    float phi1y2 = noise(p - vec3(0, eps, 0));
+    float phi1x1 = noise(p + vec3(eps, 0, 0));
+    float phi1x2 = noise(p - vec3(eps,0,  0));
+
+    float phi2z1 = noise(p + big_oofset + vec3(0, 0, eps));
+    float phi2z2 = noise(p + big_oofset - vec3(0, 0, eps));
+    float phi2y1 = noise(p + big_oofset + vec3(0, eps, 0));
+    float phi2y2 = noise(p + big_oofset - vec3(0, eps, 0));
+    float phi2x1 = noise(p + big_oofset + vec3(eps, 0, 0));
+    float phi2x2 = noise(p + big_oofset - vec3(eps,0,  0));
+
+    float phi3z1 = noise(p - big_oofset + vec3(0, 0, eps);
+    float phi3z2 = noise(p - big_oofset - vec3(0, 0, eps);
+    float phi3y1 = noise(p - big_oofset + vec3(0, eps, 0));
+    float phi3y2 = noise(p - big_oofset - vec3(0, eps, 0));
+    float phi3x1 = noise(p - big_oofset + vec3(eps, 0, 0));
+    float phi3x2 = noise(p - big_oofset - vec3(eps,0,  0));
+
+    float dph1dx = (phi1x1 - phi1x2) / (2.0 * eps);
+    float dph1dy = (phi1y1 - phi1y2) / (2.0 * eps);
+    float dph1dz = (phi1z1 - phi1z2) / (2.0 * eps);
+
+    float dph2dx = (phi2x1 - phi2x2) / (2.0 * eps);
+    float dph2dy = (phi2y1 - phi2y2) / (2.0 * eps);
+    float dph2dz = (phi2z1 - phi2z2) / (2.0 * eps);
+
+    float dph3dx = (phi3x1 - phi3x2) / (2.0 * eps);
+    float dph3dy = (phi3y1 - phi3y2) / (2.0 * eps);
+    float dph3dz = (phi3z1 - phi3z2) / (2.0 * eps);
+    return vec3(dph3dy - dp2dz, dph1dz - dph3dx, dph2dx - dph1dy);
+}
+
+struct Particle{
+  vec3 pos;
+  vec3 vel;
+  float phi;
+  float theta;
+  float life;
+};
+layout(local_size_x=1,local_size_y=1) in;
+layout(std430, binding = 0) buffer ParticleBuffer{
+  Particle particles[];
+};
+
+uniform float dt = 0.01;
+
+void main(){
+  uint id = gl_GlobalInvocationID.x;
+  Particle p = particles[id];
+
+  vec2 field = curlNoise(p.pos * 0.01);
+  p.vel = mix(p.vel, field, 0.1); // damped response to field
+  p.pos += p.vel * dt;
+  p.angle = atan(p.vel.y, p.vel.x); // orient sprite along velocity
+
+  particles[id] = p; 
+}
