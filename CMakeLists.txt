@@ -21,9 +21,19 @@ elseif(WIN32)
     # vcpkg supplies OpenCV_DIR automatically via the toolchain file — nothing needed here
 endif()
 find_package(OpenCV REQUIRED)
- 
+find_package(OpenVINO REQUIRED)
 
-add_executable(${PROJECT_NAME} src/main_2.cpp)
+
+add_executable(${PROJECT_NAME}
+    src/main_2.cpp
+    src/PoseEstimator.cpp
+    src/particle.cpp
+    src/renderer.cpp
+    src/application.cpp
+    src/camera.cpp
+)
+# Stop GLFW from pulling in the system GL headers, which clash with glad
+target_compile_definitions(${PROJECT_NAME} PRIVATE GLFW_INCLUDE_NONE)
 # --- ONNX Runtime include paths ---
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${ORT_ROOT}/include
@@ -41,7 +51,7 @@ find_library(ONNXRUNTIME_LIB
 if(NOT ONNXRUNTIME_LIB)
     message(FATAL_ERROR "libonnxruntime.so not found in ${ORT_BUILD_DIR} — check ORT_ROOT/ORT_BUILD_DIR paths")
 endif()
-set(DEPS glad glfw glm::glm OpenGL::GL)
+set(DEPS glad glfw glm::glm OpenGL::GL openvino::runtime)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE ${DEPS})
 target_link_libraries(glad PRIVATE ${CMAKE_DL_LIBS})

@@ -1,32 +1,27 @@
 #pragma once
 
-#include "onnxruntime_c_api.h"
-#include "onnxruntime_cxx_api.h"
 #include <filesystem>
-#include <string_view>
+#include <opencv2/core.hpp>
+#include <openvino/openvino.hpp>
+#include <string>
+#include <vector>
 
-using OrtFileString = std::basic_string<ORTCHAR_T>;
-class OnixInstance {
+// Loads an ONNX pose model directly through OpenVINO (not ONNX Runtime) so
+// that image preprocessing (resize/color/layout/normalize) can be baked into
+// the compiled graph via ov::preprocess::PrePostProcessor and executed on
+// `device` instead of on the CPU via OpenCV.
+class PoseEstimator {
+public:
+  PoseEstimator(const std::filesystem::path &model_path,
+                const std::string &device = "GPU");
 
-  OnixInstance() = default;
-  OnixInstance(std::string_view &model_path);
+  // Runs inference on a raw BGR8 HWC frame straight from cv::VideoCapture.
+  // Any resolution is accepted; resizing to the model's expected input size
+  // happens inside the compiled graph.
+  std::vector<float> infer(const cv::Mat &bgr_frame);
 
 private:
-  std::string model_name;
-  std::string_view log_file{"onnx_runtime.log"};
-  Ort::Logger logger;
-  auto initialize();
-  static OrtFileString toOrtFileString(const std::filesystem::path &path);
-
-  void register_execution_providers(Ort::Env &env);
-
-  Ort::ConstMemoryInfo
-  match_common_memory_info(const Ort::Session &input_session,
-                           const Ort::Session &output_session);
-
-  Ort::SessionOptions create_session_options(Ort::Env &env, const Opts &opts);
-
-  Ort::Session create_session(Ort::Env &env, std::filesystem::path &model_file,
-                              const Ort::SessionOptions &session_options);
-  auto load_onnx_model();
+  ov::Core core_;
+  ov::CompiledModel compiled_model_;
+  ov::InferRequest infer_request_;
 };

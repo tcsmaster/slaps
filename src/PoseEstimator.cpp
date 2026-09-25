@@ -1,140 +1,85 @@
-#include "PoseEstimator.hpp"
-#include <iostream>
-auto OnixInstance::initialize() {
-  auto env =
-      Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, model_name.c_str());
-  env.RegisterExecutionProviderLibrary(
-      "openvino", ORT_TSTR("onnxruntime_providers_openvino.dll"));
-  env.RegisterExecutionProviderLibrary(
-      "qnn", ORT_TSTR("onnxruntime_providers_qnn.dll"));
-  env.RegisterExecutionProviderLibrary(
-      "nv_tensorrt_rtx", ORT_TSTR("onnxruntime_providers_nv_tensorrt_rtx.dll"));
-  auto ep_devices = env.GetEpDevices();
-  auto selected_devices = my_ep_selection_function(ep_devices);
+#include "../include/PoseEstimator.hpp"
+#include <openvino/core/preprocess/pre_post_process.hpp>
+#include <stdexcept>
 
-  Ort::SessionOptions session_options;
-  session_options.AppendExecutionProvider_V2(env, selected_devices, ep_options);
-  // Optionally, set device policy. E.g.
-  // OrtExecutionProviderDevicePolicy_PREFER_GPU,
-  // OrtExecutionProviderDevicePolicy_PREFER_NPU,
-  // OrtExecutionProviderDevicePolicy_MAX_PERFORMANCE
-  session_options.SetEpSelectionPolicy(
-      OrtExecutionProviderDevicePolicy_PREFER_GPU);
+namespace {
+
+// The model's own input layout can be NCHW or NHWC depending on how it was
+// exported; find the axis of size 3 (RGB channels) to tell them apart.
+ov::Layout detect_model_layout(const ov::PartialShape &shape) {
+  if (shape.rank().get_length() != 4) {
+    throw std::runtime_error("PoseEstimator: expected a 4D model input");
+  }
+  if (shape[1].is_static() && shape[1].get_length() == 3) {
+    return ov::Layout("NCHW");
+  }
+  if (shape[3].is_static() && shape[3].get_length() == 3) {
+    return ov::Layout("NHWC");
+  }
+  throw std::runtime_error("PoseEstimator: could not infer model input layout");
 }
 
-OrtFileString OnixInstance::toOrtFileString(const std::filesystem::path &path) {
-  std::string string(path.string());
-  return {string.begin(), string.end()};
-}
-void OnixInstance::register_execution_providers(Ort::Env &env) {
-  // clang-format off
+} // namespace
 
-  std::array provider_libraries{
-    std::pair{"nv_tensorrt_rtx","libonnxruntime_providers_nv_tensorrt_rtx.so"},
-    std::pair{"cuda","libonnxruntime_providers_cuda.so"},
-    std::pair{"openvino","libonnxruntime_providers_openvino.so"},
-  };
-
-  for (auto &[registration_name, dll] : provider_libraries) {
-    auto providers_library = get_executable_path().parent_path() / dll;
-    if (!std::filesystem::is_regular_file(providers_library)) {
-      logger.LogMessage(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, log_file, 0,
-                        "register_execution_providers",
-                        "{} does not exist! Skipping execution provider",
-                        providers_library.string());
-      continue;
-    }
-    try {
-      env.RegisterExecutionProviderLibrary(registration_name,
-                                           toOrtFileString(providers_library));
-    } catch (std::exception &ex) {
-      logger.LogMessage(OrtLoggingLevel::ORT_LOGGING_LEVEL_WARNING, log_file, 0,
-                        "register_execution_providers",
-                        "Failed to register {}! Skipping execution provider",
-                        providers_library.string());
-    }
+PoseEstimator::PoseEstimator(const std::filesystem::path &model_path,
+                             const std::string &device) {
+  if (!std::filesystem::is_regular_file(model_path)) {
+    throw std::runtime_error("PoseEstimator: model file " +
+                             model_path.string() + " does not exist");
   }
-}
 
-Ort::ConstMemoryInfo
-OnixInstance::match_common_memory_info(const Ort::Session &input_session,
-                                       const Ort::Session &output_session) {
-  auto input_infos = input_session.GetMemoryInfoForOutputs();
-  auto output_infos = output_session.GetMemoryInfoForInputs();
+  // OpenVINO's frontend reads .onnx files directly, no ONNX Runtime needed.
+  auto model = core_.read_model(model_path.string());
+  const auto model_layout =
+      detect_model_layout(model->input().get_partial_shape());
 
-  // First try to find a common non-CPU allocator
-  for (auto &in : input_infos) {
-    for (auto &out : output_infos) {
-      if (in == out && in.GetDeviceType() != OrtMemoryInfoDeviceType_CPU &&
-          in.GetDeviceMemoryType() == OrtDeviceMemoryType_DEFAULT) {
-        return in;
-      }
-    }
-  }
-  for (auto &in : input_infos) {
-    for (auto &out : output_infos) {
-      if (in == out) {
-        return in;
-      }
-    }
-  }
-  logger.LogMessage(OrtLoggingLevel::ORT_LOGGING_LEVEL_ERROR, log_file, 0,
-                    "register_execution_providers",
-                    "Could not find a common allocator");
-  std::cerr << "Could not find a common allocator" << std::endl;
+  ov::preprocess::PrePostProcessor ppp(model);
+
+  // Describe the buffer that infer() will actually hand over: a BGR8, HWC
+  // cv::Mat straight from cv::VideoCapture, at whatever resolution the
+  // camera happens to produce.
+  ppp.input()
+      .tensor()
+      .set_shape({1, ov::Dimension::dynamic(), ov::Dimension::dynamic(), 3})
+      .set_element_type(ov::element::u8)
+      .set_layout("NHWC")
+      .set_color_format(ov::preprocess::ColorFormat::BGR);
+
+  // Everything below is compiled into the graph and runs on `device`
+  // (e.g. GPU) instead of on the CPU via cv::cvtColor/cv::resize.
+  ppp.input()
+      .preprocess()
+      .convert_color(ov::preprocess::ColorFormat::RGB)
+      .convert_element_type(ov::element::f32)
+      .resize(ov::preprocess::ResizeAlgorithm::RESIZE_LINEAR)
+      .scale(255.0f); // matches pose_landmark's [0, 1] input normalization
+
+  // Tensor layout is NHWC; tell PrePostProcessor what the model itself
+  // expects so it inserts the transpose automatically if they differ.
+  ppp.input().model().set_layout(model_layout);
+
+  model = ppp.build();
+
+  compiled_model_ = core_.compile_model(model, device);
+  infer_request_ = compiled_model_.create_infer_request();
 }
 
-Ort::SessionOptions OnixInstance::create_session_options(Ort::Env &env,
-                                                         const Opts &opts) {
-  std::vector<Ort::ConstEpDevice> selected_devices;
-  auto ep_devices = env.GetEpDevices();
-  logger.LogFormattedMessage(OrtLoggingLevel::ORT_LOGGING_LEVEL_INFO, log_file,
-                             0, "create_session_options", "{} devices found",
-                             ep_devices.size());
-  for (auto &device : ep_devices) {
-    auto metadata = device.Device().Metadata();
-    // LUID can be used on Windows platform to match EpDevices with
-    // IDXGIAdapter in case an application already has a device selection
-    // logic based on `IDXGIAdapter`s
-    auto luid = metadata.GetValue("LUID");
-    logger.LogFormattedMessage(
-        OrtLoggingLevel::ORT_LOGGING_LEVEL_INFO, log_file, 0,
-        "create_session_options",
-        "Vendor: {}, EpName: {}, DeviceId: 0x{:x}, LUID: {}", device.EpVendor(),
-        device.EpName(), device.Device().DeviceId(),
-        luid ? luid : "<unavailable>");
-    if (to_uppercase(opts.select_vendor) == device.Device().Vendor()) {
-      selected_devices.push_back(device);
-    }
-    if (to_uppercase(opts.select_ep) == device.EpName()) {
-      selected_devices.push_back(device);
-    }
+std::vector<float> PoseEstimator::infer(const cv::Mat &bgr_frame) {
+  if (!bgr_frame.isContinuous() || bgr_frame.type() != CV_8UC3) {
+    throw std::runtime_error(
+        "PoseEstimator::infer expects a continuous CV_8UC3 BGR frame");
   }
 
-  Ort::SessionOptions so;
-  if (!selected_devices.empty()) {
-    Ort::KeyValuePairs ep_options;
-    // Select EP for manually selected devices
-    so.AppendExecutionProvider_V2(env, selected_devices, ep_options);
-  }
+  // Zero-copy: wraps the cv::Mat's own buffer, no intermediate allocation.
+  ov::Tensor input_tensor(ov::element::u8,
+                          {1, static_cast<size_t>(bgr_frame.rows),
+                           static_cast<size_t>(bgr_frame.cols), 3},
+                          bgr_frame.data);
 
-  so.SetEpSelectionPolicy(opts.ep_device_policy);
-  return so;
+  infer_request_.set_input_tensor(input_tensor);
+  infer_request_.infer();
+
+  const ov::Tensor &output = infer_request_.get_output_tensor();
+  const float *data = output.data<float>();
+  return std::vector<float>(data, data + output.get_size());
 }
-
-Ort::Session
-OnixInstance::create_session(Ort::Env &env, std::filesystem::path &model_file,
-                             const Ort::SessionOptions &session_options) {
-  if (!std::filesystem::is_regular_file(model_file)) {
-    logger.LogFormattedMessage(
-        OrtLoggingLevel::ORT_LOGGING_LEVEL_ERROR, log_file, 0, "create_session",
-        "Model file {} does not exist!", model_file.string());
-    std::cerr << "Model file " << model_file.string() << " does not exist!"
-              << std::endl;
-  }
-
-  Ort::Session session(env, toOrtFileString(model_file).c_str(),
-                       session_options);
-  return session;
-}
-auto OnixInstance::load_onnx_model() {}
