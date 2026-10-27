@@ -1,6 +1,7 @@
 #include "../include/PoseEstimator.hpp"
 #include <openvino/core/preprocess/pre_post_process.hpp>
 #include <stdexcept>
+#include <vector>
 
 namespace {
 
@@ -20,7 +21,7 @@ ov::Layout detect_model_layout(const ov::PartialShape &shape) {
 }
 
 } // namespace
-
+const std::vector<float> PoseEstimator::GetPose() const { return pose_vector; }
 PoseEstimator::PoseEstimator(const std::filesystem::path &model_path,
                              const std::string &device) {
   if (!std::filesystem::is_regular_file(model_path)) {
@@ -82,4 +83,12 @@ std::vector<float> PoseEstimator::infer(const cv::Mat &bgr_frame) {
   const ov::Tensor &output = infer_request_.get_output_tensor();
   const float *data = output.data<float>();
   return std::vector<float>(data, data + output.get_size());
+}
+
+std::vector<float> posepostprocess() {
+  /*
+  Need to
+  - filter whixh keypoints to track
+  - flip around y axis
+  */
 }

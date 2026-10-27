@@ -2,18 +2,9 @@
 #include <cstdlib>
 #include <glad/glad.h>
 
-#include <glm/common.hpp>
-#include <glm/ext/matrix_float4x4.hpp>
-#include <glm/ext/matrix_transform.hpp>
-#include <glm/ext/vector_float3.hpp>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/noise.hpp>
-
 #include "../include/particle.hpp"
-#include <glm/matrix.hpp>
-#include <glm/trigonometric.hpp>
 #include <vector>
+
 const std::vector<Particle> ParticleSystem::getParticles() const {
   return particles;
 }
@@ -35,9 +26,10 @@ void ParticleSystem::findLastDeadParticle() {
   // override first particle if all others are alive
   LastDeadElement = 0;
 }
-void ParticleSystem::RefillDeadParticle() {
+void ParticleSystem::RefillDeadParticle(RNG *rng_engine) {
   Particle &p = particles[LastDeadElement];
-  p.offset = p.offset + rand() * 0.1;
-  p.velocity = p.velocity + rand() * 0.1;
-  // TODO: finish this
+  glm::vec3 new_offset = rng_engine->randomvec3(-1, 1);
+  glm::vec3 new_velocity = rng_engine->randomvec3(-1, 1);
+  p.offset = p.offset + new_offset * 0.1f;
+  p.velocity = p.velocity + new_velocity * 0.1f;
 };

@@ -1,11 +1,10 @@
-#include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glad/glad.h>
 
 #include <array>
 #include <cstdlib>
 #include <iostream>
 
-#include <cmath>
 #include <cstdlib>
 #include <glm/common.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
@@ -18,8 +17,8 @@
 #include <glm/gtc/noise.hpp>
 #include <glm/trigonometric.hpp>
 
-#include "../include/particle.hpp"
-#include "../include/renderer.hpp"
+#include "../include/Particle.hpp"
+#include "../include/Renderer.hpp"
 #include <glm/matrix.hpp>
 #include <glm/trigonometric.hpp>
 #include <vector>
@@ -46,6 +45,12 @@ void Renderer::initializeOpenGL() {
     glfwTerminate();
     exit(EXIT_FAILURE);
   }
+  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &workGroupSizes[0]);
+  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1, &workGroupSizes[1]);
+  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2, &workGroupSizes[2]);
+  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &workGroupCounts[0]);
+  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1, &workGroupCounts[1]);
+  glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 2, &workGroupCounts[2]);
   glViewport(0, 0, WIDTH, HEIGHT);
   glfwSetFramebufferSizeCallback(
       window, [](GLFWwindow *, int w, int h) { glViewport(0, 0, w, h); });
@@ -79,17 +84,18 @@ void Renderer::initializeParticleBuffer(std::vector<Particle> &particles) {
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
 }
 void Renderer::initializePoseBuffer(std::vector<float> &keypoints) {
-  glBindBuffer(GL_ARRAY_BUFFER, posecoordinatesVBO);
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindVertexArray(0);
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, posecoordinatesSSBO);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, keypoints.size(), keypoints.data(),
+               GL_STATIC_READ);
+  glBindBufferBase(GL_ARRAY_BUFFER, 0, 0);
 }
 void Renderer::renderParticles(Shader &frag_vec_shader, Shader &comp_shader,
                                std::array<GLuint, 6> &indices,
                                std::vector<Particle> &particles) {
   comp_shader.use();
+  // query the amount of groups and sizes we can use.
   glDispatchCompute(512, 512, 1);
   glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-  // TODO: decide if this needs lighting at all
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   frag_vec_shader.use();
   frag_vec_shader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);

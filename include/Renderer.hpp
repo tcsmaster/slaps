@@ -1,9 +1,8 @@
 #pragma once
 
-#include "particle.hpp"
+#include "Particle.hpp"
 #include "shader_s.hpp"
 #include <array>
-#include <cstdlib>
 #include <glm/common.hpp>
 #include <glm/ext/matrix_float4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -34,5 +33,7 @@ public:
 
 private:
   // render data
-  GLuint ParticleVAO, particlesSSBO, VBO, EBO, posecoordinatesVBO;
+  GLuint ParticleVAO, particlesSSBO, VBO, EBO, posecoordinatesSSBO;
+  int workGroupSizes[3];
+  int workGroupCounts[3];
 };

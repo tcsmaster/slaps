@@ -19,9 +19,12 @@ public:
   // Any resolution is accepted; resizing to the model's expected input size
   // happens inside the compiled graph.
   std::vector<float> infer(const cv::Mat &bgr_frame);
+  std::vector<float> posepostprocess();
+  const std::vector<float> GetPose() const;
 
 private:
   ov::Core core_;
   ov::CompiledModel compiled_model_;
   ov::InferRequest infer_request_;
+  std::vector<float> pose_vector;
 };

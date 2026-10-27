@@ -1,12 +1,13 @@
 #pragma once
 
-#include <glad/glad.h>
 #include <cstdlib>
+#include <glad/glad.h>
 #include <glm/common.hpp>
 #include <glm/ext/matrix_float4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/vector_float3.hpp>
 #include <glm/glm.hpp>
+#include <random>
 
 #include <array>
 #include <vector>
@@ -25,6 +26,46 @@ struct Particle {
            float layerOffset, float influence, float life)
       : offset(offset), velocity(velocity), homeLayer(homeLayer),
         layerOffset(layerOffset), influence(influence), life(life) {}
+};
+class RNG {
+public:
+  // Access the single global instance
+  static RNG &instance() {
+    static RNG rng; // constructed once, thread-safe since C++11
+    return rng;
+  }
+
+  // Delete copy/move so nobody accidentally duplicates state
+  RNG(const RNG &) = delete;
+  RNG &operator=(const RNG &) = delete;
+
+  // Integer in [min, max] inclusive
+  int uniformInt(int min, int max) {
+    std::uniform_int_distribution<int> dist(min, max);
+    return dist(engine_);
+  }
+
+  // Real number in [min, max)
+  double uniformReal(double min, double max) {
+    std::uniform_real_distribution<double> dist(min, max);
+    return dist(engine_);
+  }
+  glm::vec3 randomvec3(float min, float max) {
+    std::uniform_real_distribution<float> inp(min, max);
+    float x = inp(engine_);
+    float y = inp(engine_);
+    float z = inp(engine_);
+    return glm::vec3(x, y, z);
+  }
+  // Access raw engine if you need something else (e.g. std::shuffle)
+  std::mt19937 &engine() { return engine_; }
+
+  // Optional: reseed for reproducible tests
+  void seed(unsigned s) { engine_.seed(s); }
+
+private:
+  RNG() : engine_(std::random_device{}()) {}
+  std::mt19937 engine_;
 };
 class ParticleSystem {
 public:
@@ -46,5 +87,5 @@ private:
   std::size_t LastDeadElement = 0;
   std::vector<Particle> particles;
   void findLastDeadParticle();
-  void RefillDeadParticle();
+  void RefillDeadParticle(RNG *rng_engine);
 };
